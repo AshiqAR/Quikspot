@@ -1,0 +1,1 @@
+# quikspot_native
