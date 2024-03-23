@@ -1,7 +1,13 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, Children} from "react";
 import {Marker} from "react-native-maps";
 
-export default function ImageMarker({point, title, color, description}) {
+export default function ImageMarker({
+  point,
+  title,
+  color,
+  description,
+  children,
+}) {
   const [shouldTrack, setTrack] = useState(false);
   const [image, setImage] = useState(
     `https://placehold.co/60/${color}/ffffffpng?text=P&font=Montserrat`
@@ -23,6 +29,8 @@ export default function ImageMarker({point, title, color, description}) {
       coordinate={point}
       title={title}
       description={description}
-    />
+    >
+      {children}
+    </Marker>
   );
 }

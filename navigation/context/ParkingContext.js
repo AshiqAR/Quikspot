@@ -1,27 +1,43 @@
-import React, {createContext, useContext, useEffect, useState} from 'react';
-import {PermissionsAndroid, Platform} from 'react-native';
-import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
-import Geolocation from 'react-native-geolocation-service';
+import React, {createContext, useContext, useEffect, useState} from "react";
+import {PermissionsAndroid, Linking} from "react-native";
+import {check, request, PERMISSIONS, RESULTS} from "react-native-permissions";
+import Geolocation from "react-native-geolocation-service";
+import parkAreas from "../utilities/parkAreas";
 
 const ParkingContext = createContext();
 
 export const ParkingDataProvider = ({children}) => {
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
   const [location, setLocation] = useState(null);
+  const [bookingDetails, setBookingDetails] = useState({}); // {parkSpaceId, vehicleId, startTime, endTime}
+
+  const NavigateToParkArea = (latitude, longitude) => {
+    console.log("Navigating");
+    Linking.openURL(
+      `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving&dir_action=navigate`
+    );
+  };
+
+  const updateBookingDetails = details => {
+    setBookingDetails(prevDetails => ({
+      ...prevDetails,
+      ...details,
+    }));
+  };
 
   const requestLocationPermission = async () => {
     try {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
-          title: 'Geolocation Permission',
-          message: 'Can we access your location?',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        },
+          title: "Geolocation Permission",
+          message: "Can we access your location?",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK",
+        }
       );
-      if (granted === 'granted') {
+      if (granted === "granted") {
         return true;
       } else {
         return false;
@@ -38,12 +54,12 @@ export const ParkingDataProvider = ({children}) => {
         Geolocation.getCurrentPosition(
           position => {
             setLocationSharingEnabled(true);
-            setLocation(position['coords']);
+            setLocation(position["coords"]);
           },
           error => {
             setLocationSharingEnabled(false);
           },
-          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000}
         );
       }
       // setLocationSharingEnabled(true);
@@ -58,7 +74,16 @@ export const ParkingDataProvider = ({children}) => {
 
   return (
     <ParkingContext.Provider
-      value={{locationSharingEnabled, getLocation, location}}>
+      value={{
+        locationSharingEnabled,
+        getLocation,
+        location,
+        bookingDetails,
+        updateBookingDetails,
+        parkAreas,
+        NavigateToParkArea,
+      }}
+    >
       {children}
     </ParkingContext.Provider>
   );

@@ -1,16 +1,17 @@
 import React, {useState} from "react";
-import {View, StyleSheet, Text, Keyboard} from "react-native";
-import MapView, {Marker, PROVIDER_GOOGLE} from "react-native-maps";
+import {View, StyleSheet, Text, Keyboard, Linking} from "react-native";
+import MapView, {Marker, PROVIDER_GOOGLE, Callout} from "react-native-maps";
 import {mapStyle} from "../../utilities/mapStyles";
 import {GooglePlacesAutocomplete} from "react-native-google-places-autocomplete";
 import {MAP_API_KEY} from "@env";
 import Icon from "react-native-vector-icons/Ionicons";
-import parkAreas from "../../utilities/parkAreas";
 import ImageMarker from "../../components/ImageMarker";
+import {useParkingDetails} from "../../context/ParkingContext";
 
 navigator.geolocation = require("react-native-geolocation-service");
 
 export default function MapScreen() {
+  const {parkAreas, NavigateToParkArea} = useParkingDetails();
   const [mapRegion, setMapRegion] = useState({
     latitude: 8.545785,
     longitude: 76.904143,
@@ -94,7 +95,7 @@ export default function MapScreen() {
             language: "en",
             location: "10.446049,76.160702",
             country: "IN",
-            type: "(cities)",
+            type: "geocode",
             radius: 200000,
           }}
           styles={{
@@ -158,10 +159,10 @@ export default function MapScreen() {
               longitude: park.coords.longitude,
             }}
             title={park.name}
-            description={`parking slots free: ${park.no_free_slots}`}
+            description={`free slots: ${park.no_free_slots}`}
             index={index}
             color={getColorForMarker(index, visibleParks.length)}
-          />
+          ></ImageMarker>
         ))}
       </MapView>
     </View>
@@ -201,5 +202,22 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+    marginBottom: -55,
+  },
+
+  calloutView: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "#fff",
+    borderColor: "#ccc",
+  },
+  calloutTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  calloutDescription: {
+    fontSize: 12,
   },
 });
