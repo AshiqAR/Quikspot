@@ -1,27 +1,81 @@
-import React, {useState} from "react";
-import {View, StyleSheet, Text, Keyboard, Linking} from "react-native";
+import React, {useEffect, useState} from "react";
+import {
+  View,
+  StyleSheet,
+  Text,
+  Keyboard,
+  Linking,
+  TouchableOpacity,
+  Dimensions,
+  ScrollView,
+  Modal,
+  ActivityIndicator,
+} from "react-native";
 import MapView, {Marker, PROVIDER_GOOGLE, Callout} from "react-native-maps";
 import {mapStyle} from "../../utilities/mapStyles";
 import {GooglePlacesAutocomplete} from "react-native-google-places-autocomplete";
 import {MAP_API_KEY} from "@env";
-import Icon from "react-native-vector-icons/Ionicons";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import ImageMarker from "../../components/ImageMarker";
 import {useParkingDetails} from "../../context/ParkingContext";
+import ParkAreaCard from "../../components/ParkAreaCard";
 
 navigator.geolocation = require("react-native-geolocation-service");
+const {width, height} = Dimensions.get("window");
+const ASPECT_RATIO = width / height;
+const LATITUDE_DELTA = 1 / 111; // Roughly 10 kilometers
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 export default function MapScreen() {
-  const {parkAreas, NavigateToParkArea} = useParkingDetails();
+  const {
+    parkAreas,
+    searchLocation,
+    setSearchLocation,
+    location,
+    getLocation,
+    suggestedParkAreas,
+    resetSuggestedParkAreas,
+    isLoading,
+  } = useParkingDetails();
   const [mapRegion, setMapRegion] = useState({
     latitude: 8.545785,
     longitude: 76.904143,
-    latitudeDelta: 0.0005,
-    longitudeDelta: 0.006,
+    latitudeDelta: LATITUDE_DELTA,
+    longitudeDelta: LONGITUDE_DELTA,
   });
+
+  useEffect(() => {
+    console.log("suggestedParkAreas changed: ", suggestedParkAreas);
+  }, [suggestedParkAreas]);
+
   const [isFocused, setIsFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchKey, setSearchKey] = useState(0);
   const [visibleParks, setVisibleParks] = useState([]);
+  const [locationIconColor, setLocationIconColor] = useState("gray");
+  const [showParkAreas, setShowParkAreas] = useState(false);
+
+  const resetSearchInput = async () => {
+    setSearchQuery("");
+    Keyboard.dismiss();
+    setIsFocused(false);
+    setSearchKey(prevKey => prevKey + 1);
+  };
+
+  const getCurrentLocation = async () => {
+    setLocationIconColor("#4285F4");
+    resetSearchInput();
+    await getLocation();
+    if (location) {
+      setMapRegion({
+        ...mapRegion,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
+    }
+    setSearchLocation({location: location});
+    setShowParkAreas(true);
+  };
 
   const getColorForMarker = (index, total) => {
     const intensity = 255 - (index / total) * 220;
@@ -44,19 +98,18 @@ export default function MapScreen() {
       );
     });
     setVisibleParks(parksInView);
+    console.log(parksInView.length);
   };
 
-  // Handler for the close/search icon press action
   const handleIconPress = () => {
     if (isFocused) {
       setSearchQuery("");
       Keyboard.dismiss();
       setIsFocused(false);
-      setSearchKey(prevKey => prevKey + 1); // Increment the key to force re-mount
+      setSearchKey(prevKey => prevKey + 1);
     }
   };
 
-  // Update to renderRightButton to incorporate handleIconPress
   const renderRightButton = () => (
     <Icon
       name={isFocused ? "close" : "search"}
@@ -72,30 +125,73 @@ export default function MapScreen() {
     />
   );
 
+  const renderParkAreas = () => (
+    <View style={styles.parkAreasContainer}>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => {
+          setShowParkAreas(false);
+        }}
+      >
+        <Icon name="close" size={25} color="gray" />
+      </TouchableOpacity>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        pagingEnabled
+      >
+        {suggestedParkAreas.map((parkArea, index) => (
+          <ParkAreaCard key={index} parkArea={parkArea} />
+        ))}
+      </ScrollView>
+    </View>
+  );
+
+  const RenderModal = () => (
+    <Modal transparent={true} visible={isLoading}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0, 0, 0, 0.1)",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="brown" />
+      </View>
+    </Modal>
+  );
+
   return (
     <View style={styles.container}>
+      {isLoading && <RenderModal />}
       <View style={styles.searchContainer}>
         <GooglePlacesAutocomplete
           key={searchKey}
           placeholder="Search Place and Find Space"
           onFail={error => console.error(error)}
-          onPress={(data, details = null) => {
-            console.log("here");
-            console.log(data, details);
+          onPress={async (data, details = null) => {
+            setSearchLocation({
+              location: {
+                latitude: details.geometry.location.lat,
+                longitude: details.geometry.location.lng,
+              },
+            });
             setMapRegion({
               latitude: details.geometry.location.lat,
               longitude: details.geometry.location.lng,
-              latitudeDelta: 0.005,
-              longitudeDelta: 0.005,
+              latitudeDelta: LATITUDE_DELTA,
+              longitudeDelta: LONGITUDE_DELTA,
             });
             Keyboard.dismiss();
+            setLocationIconColor("gray");
+            setShowParkAreas(true);
           }}
           query={{
             key: MAP_API_KEY,
             language: "en",
             location: "10.446049,76.160702",
             country: "IN",
-            type: "geocode",
             radius: 200000,
           }}
           styles={{
@@ -131,8 +227,6 @@ export default function MapScreen() {
             value: searchQuery,
           }}
           renderRightButton={renderRightButton}
-          currentLocation={true}
-          currentLocationLabel="Current Location"
         />
       </View>
       <MapView
@@ -140,31 +234,59 @@ export default function MapScreen() {
         style={styles.map}
         customMapStyle={mapStyle}
         region={mapRegion}
-        onRegionChangeComplete={handleRegionChangeComplete}
+        onRegionChangeComplete={
+          showParkAreas ? null : handleRegionChangeComplete
+        }
       >
         <Marker
           coordinate={{
             latitude: mapRegion.latitude,
             longitude: mapRegion.longitude,
           }}
-          title={"Selected Location"}
+          title={"Selected Place"}
           description={"This is the place you've selected."}
         />
-
-        {visibleParks.map((park, index) => (
-          <ImageMarker
-            key={index}
-            point={{
-              latitude: park.coords.latitude,
-              longitude: park.coords.longitude,
-            }}
-            title={park.name}
-            description={`free slots: ${park.no_free_slots}`}
-            index={index}
-            color={getColorForMarker(index, visibleParks.length)}
-          ></ImageMarker>
-        ))}
+        {showParkAreas
+          ? suggestedParkAreas.map((park, index) => (
+              <ImageMarker
+                key={index}
+                point={{
+                  latitude: park.coords.latitude,
+                  longitude: park.coords.longitude,
+                }}
+                title={park.name}
+                description={`free slots: ${park.no_free_slots}`}
+                index={index}
+                color={getColorForMarker(index, suggestedParkAreas.length)}
+              />
+            ))
+          : visibleParks.map((park, index) => (
+              <ImageMarker
+                key={index}
+                point={{
+                  latitude: park.coords.latitude,
+                  longitude: park.coords.longitude,
+                }}
+                title={park.name}
+                description={`free slots: ${park.no_free_slots}`}
+                index={index}
+                color={getColorForMarker(index, visibleParks.length)}
+              />
+            ))}
       </MapView>
+      {showParkAreas && renderParkAreas()}
+      {!showParkAreas && (
+        <TouchableOpacity
+          style={styles.locationIcon}
+          onPress={() => {
+            getCurrentLocation();
+            setShowParkAreas(true); // Show park areas when the current location is fetched
+          }}
+          activeOpacity={0.7}
+        >
+          <Icon name="my-location" size={25} color={locationIconColor} />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -205,19 +327,33 @@ const styles = StyleSheet.create({
     marginBottom: -55,
   },
 
-  calloutView: {
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "#fff",
-    borderColor: "#ccc",
+  locationIcon: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    padding: 10,
+    borderRadius: 50,
+    backgroundColor: "white",
   },
-  calloutTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
+  parkAreasContainer: {
+    position: "absolute",
+    bottom: 10,
+    backgroundColor: "red",
+    left: 0,
+    right: 0,
   },
-  calloutDescription: {
-    fontSize: 12,
+  parkAreasContainer: {
+    position: "absolute",
+    bottom: 8,
+    left: 0,
+    right: 0,
+  },
+  closeButton: {
+    alignSelf: "flex-end",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    borderRadius: 50,
+    marginRight: 20,
+    marginBottom: 5,
+    padding: 2,
   },
 });

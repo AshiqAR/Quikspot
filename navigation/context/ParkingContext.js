@@ -1,15 +1,56 @@
 import React, {createContext, useContext, useEffect, useState} from "react";
 import {PermissionsAndroid, Linking} from "react-native";
 import {check, request, PERMISSIONS, RESULTS} from "react-native-permissions";
+import {getDistanceFromLatLonInKm} from "../utilities/utils";
 import Geolocation from "react-native-geolocation-service";
 import parkAreas from "../utilities/parkAreas";
+import useCloseWithIndicator from "../customHooks/useCloseWithIndicator";
 
 const ParkingContext = createContext();
 
 export const ParkingDataProvider = ({children}) => {
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
-  const [location, setLocation] = useState(null);
-  const [bookingDetails, setBookingDetails] = useState({}); // {parkSpaceId, vehicleId, startTime, endTime}
+  const [location, setLocation] = useState(null); // users location
+  const [bookingDetails, setBookingDetails] = useState({}); // {parkSpaceId, vehicleId, startTime, endTime
+  const [searchLocation, setSearchLocation] = useState(null); // location to search for park areas
+  const [suggestedParkAreas, setSuggestedParkAreas] = useState([]);
+  const [selectedParkArea, setSelectedParkArea] = useState(null);
+
+  const updateSelectedParkArea = parkArea => {
+    setSelectedParkArea(parkArea);
+  };
+  const resetSelectedParkArea = () => {
+    setSelectedParkArea(null);
+  };
+
+  const resetSuggestedParkAreas = () => {
+    setSuggestedParkAreas([]);
+  };
+
+  const [fetchSuggestedParkAreas, isLoading] = useCloseWithIndicator(
+    async () => {
+      // Simulate fetching suggested park areas with a 4-second delay
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      setSuggestedParkAreas(
+        getParkAreasWithinDistance(
+          searchLocation.location.latitude,
+          searchLocation.location.longitude,
+          1,
+          parkAreas
+        )
+      );
+    }
+  );
+
+  useEffect(() => {
+    const performAsyncFetch = async () => {
+      if (searchLocation != null) {
+        console.log("here");
+        await fetchSuggestedParkAreas();
+      }
+    };
+    performAsyncFetch();
+  }, [searchLocation]);
 
   const NavigateToParkArea = (latitude, longitude) => {
     console.log("Navigating");
@@ -72,6 +113,22 @@ export const ParkingDataProvider = ({children}) => {
     getLocation();
   }, []);
 
+  useEffect(() => {
+    console.log("Location changed ", location);
+  }, [location]);
+
+  function getParkAreasWithinDistance(latitude, longitude, dist, parkAreas) {
+    return parkAreas.filter(parkArea => {
+      const distance = getDistanceFromLatLonInKm(
+        latitude,
+        longitude,
+        parkArea.coords.latitude,
+        parkArea.coords.longitude
+      );
+      return distance <= dist;
+    });
+  }
+
   return (
     <ParkingContext.Provider
       value={{
@@ -82,6 +139,14 @@ export const ParkingDataProvider = ({children}) => {
         updateBookingDetails,
         parkAreas,
         NavigateToParkArea,
+        searchLocation,
+        setSearchLocation,
+        suggestedParkAreas,
+        fetchSuggestedParkAreas,
+        resetSuggestedParkAreas,
+        isLoading,
+        updateSelectedParkArea,
+        resetSelectedParkArea,
       }}
     >
       {children}
