@@ -35,7 +35,6 @@ const ParkAreaCard = ({parkArea}) => {
         {parkArea.place} - {parkArea.distance}km
       </Text>
 
-      {/* Adjusting layout to emphasize rate and slots more */}
       <View style={styles.infoContainer}>
         <View style={styles.rateAndSlots}>
           <View style={styles.slotsContainer}>

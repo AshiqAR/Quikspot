@@ -1,6 +1,6 @@
-import React, {useState, useEffect, useRef, useCallback} from 'react';
-import {debounce} from 'lodash';
-import randomLocation from 'random-location';
+import React, {useState, useEffect, useRef, useCallback} from "react";
+import {debounce} from "lodash";
+import randomLocation from "random-location";
 import {
   View,
   Pressable,
@@ -8,16 +8,16 @@ import {
   Text,
   Alert,
   Dimensions,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome5';
-import {useAuth} from '../context/AuthContext';
-import MapView from 'react-native-maps';
-import {mapStyle} from '../utilities/mapStyles';
-import CustomUserLocationMarker from '../components/CurrentLocationMarker';
-import ParkAreaMarker from '../components/ParkAreaMarker';
-import parkAreas from '../utilities/parkAreas';
-import {useParkingDetails} from '../context/ParkingContext';
-import ImageMarker from '../components/ImageMarker';
+} from "react-native";
+import Icon from "react-native-vector-icons/FontAwesome5";
+import {useAuth} from "../context/AuthContext";
+import MapView from "react-native-maps";
+import {mapStyle} from "../utilities/mapStyles";
+import CustomUserLocationMarker from "../components/CurrentLocationMarker";
+import ParkAreaMarker from "../components/ParkAreaMarker";
+import parkAreas from "../utilities/parkAreas";
+import {useParkingDetails} from "../context/ParkingContext";
+import ImageMarker from "../components/ImageMarker";
 
 //
 const INTIAL_REGION = {
@@ -47,7 +47,7 @@ export default function Home({navigation}) {
   const onChangeLocation = useCallback(
     debounce(
       region => {
-        console.log('debounced region', region);
+        console.log("debounced region", region);
         const locations = new Array(100).fill(undefined).map(() => {
           const R = 4000; // meters
 
@@ -58,9 +58,9 @@ export default function Home({navigation}) {
         setMarkers(locations);
       },
       1000,
-      {trailing: true, leading: false},
+      {trailing: true, leading: false}
     ),
-    [],
+    []
   );
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function Home({navigation}) {
           latitudeDelta: 0.005,
           longitudeDelta: 0.0025,
         },
-        1500,
+        1500
       );
     }
   }, [locationSharingEnabled, location]);
@@ -91,12 +91,12 @@ export default function Home({navigation}) {
   const handleSearchForParkingSpace = () => {
     if (user.walletBalance < 100) {
       Alert.alert(
-        'Insufficient balance',
-        'You need at least 100 in your wallet to search for a parking space.',
+        "Insufficient balance",
+        "You need at least 100 in your wallet to search for a parking space."
       );
       return;
     }
-    navigation.navigate('SelectVehicle');
+    navigation.navigate("SelectVehicle");
   };
 
   return (
@@ -104,17 +104,18 @@ export default function Home({navigation}) {
       {!locationSharingEnabled && (
         <Pressable
           style={{
-            backgroundColor: 'lightyellow',
+            backgroundColor: "lightyellow",
             height: 30,
-            alignItems: 'center',
-            justifyContent: 'space-evenly',
-            flexDirection: 'row',
+            alignItems: "center",
+            justifyContent: "space-evenly",
+            flexDirection: "row",
           }}
-          onPress={getLocation}>
-          <Text style={{color: 'black', fontWeight: 400}}>
+          onPress={getLocation}
+        >
+          <Text style={{color: "black", fontWeight: 400}}>
             Location Sharing Disabled. Tap here to enable
           </Text>
-          <Text style={{color: 'orange', fontWeight: 'bold'}}>Enable</Text>
+          <Text style={{color: "orange", fontWeight: "bold"}}>Enable</Text>
         </Pressable>
       )}
       <MapView
@@ -122,13 +123,17 @@ export default function Home({navigation}) {
         style={styles.map}
         customMapStyle={mapStyle}
         onRegionChange={onRegionChange}
-        initialRegion={mapRegion}>
-        {locationSharingEnabled && location != null && (
+        initialRegion={mapRegion}
+        showsUserLocation={true}
+        toolbarEnabled={false}
+        loadingEnabled={true}
+      >
+        {/* {locationSharingEnabled && location != null && (
           <CustomUserLocationMarker
             latitude={location.latitude}
             longitude={location.longitude}
           />
-        )}
+        )} */}
         {parkAreas.map((parkArea, index) => (
           <ImageMarker
             key={index}
@@ -142,7 +147,8 @@ export default function Home({navigation}) {
       <View style={styles.searchContainer}>
         <Pressable
           style={styles.searchPressable}
-          onPress={handleSearchForParkingSpace}>
+          onPress={handleSearchForParkingSpace}
+        >
           <Text style={styles.searchText}>Search For Parking Space</Text>
           <Icon name="parking" size={30} color="#000" />
         </Pressable>
@@ -154,33 +160,33 @@ export default function Home({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   searchContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 10,
     left: 10,
     right: 10,
     zIndex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   searchPressable: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 15,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   searchText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   listItem: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#CCCCCC',
+    borderBottomColor: "#CCCCCC",
   },
   placeName: {
     fontSize: 18,

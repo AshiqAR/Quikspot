@@ -6,6 +6,8 @@ export default function ImageMarker({
   title,
   color,
   description,
+  onPress,
+  index,
   children,
 }) {
   const [shouldTrack, setTrack] = useState(false);
@@ -29,6 +31,9 @@ export default function ImageMarker({
       coordinate={point}
       title={title}
       description={description}
+      onPress={() => {
+        onPress && onPress(index);
+      }}
     >
       {children}
     </Marker>

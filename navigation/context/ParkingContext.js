@@ -144,6 +144,7 @@ export const ParkingDataProvider = ({children}) => {
         suggestedParkAreas,
         fetchSuggestedParkAreas,
         resetSuggestedParkAreas,
+        setSuggestedParkAreas,
         isLoading,
         updateSelectedParkArea,
         resetSelectedParkArea,

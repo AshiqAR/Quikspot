@@ -1,16 +1,16 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useRef} from "react";
 import {
   View,
   StyleSheet,
   Text,
   Keyboard,
-  Linking,
   TouchableOpacity,
   Dimensions,
   ScrollView,
   Modal,
   ActivityIndicator,
 } from "react-native";
+
 import MapView, {Marker, PROVIDER_GOOGLE, Callout} from "react-native-maps";
 import {mapStyle} from "../../utilities/mapStyles";
 import {GooglePlacesAutocomplete} from "react-native-google-places-autocomplete";
@@ -19,6 +19,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import ImageMarker from "../../components/ImageMarker";
 import {useParkingDetails} from "../../context/ParkingContext";
 import ParkAreaCard from "../../components/ParkAreaCard";
+import NoParkAreaFoundCard from "../../components/NoParkAreaFoundCard";
 
 navigator.geolocation = require("react-native-geolocation-service");
 const {width, height} = Dimensions.get("window");
@@ -27,14 +28,24 @@ const LATITUDE_DELTA = 1 / 111; // Roughly 10 kilometers
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 export default function MapScreen() {
+  const [searchBarIsFocused, setSearchBarIsFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchKey, setSearchKey] = useState(0);
+  const [visibleParks, setVisibleParks] = useState([]);
+  const [locationIconColor, setLocationIconColor] = useState("gray");
+  const [showParkAreas, setShowParkAreas] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(null);
+  const [showMarker, setShowMarker] = useState(false);
+  const [tappedParkArea, setTappedParkArea] = useState(null);
+
   const {
     parkAreas,
-    searchLocation,
     setSearchLocation,
     location,
     getLocation,
     suggestedParkAreas,
     resetSuggestedParkAreas,
+    setSuggestedParkAreas,
     isLoading,
   } = useParkingDetails();
   const [mapRegion, setMapRegion] = useState({
@@ -43,22 +54,52 @@ export default function MapScreen() {
     latitudeDelta: LATITUDE_DELTA,
     longitudeDelta: LONGITUDE_DELTA,
   });
+  const [camera, setCamera] = useState(null);
+  const scrollViewRef = useRef(null);
 
   useEffect(() => {
-    console.log("suggestedParkAreas changed: ", suggestedParkAreas);
+    resetSuggestedParkAreas();
+    setShowParkAreas(false);
+  }, []);
+
+  useEffect(() => {
+    if (suggestedParkAreas.length > 0) {
+      setCurrentIndex(0);
+    }
   }, [suggestedParkAreas]);
 
-  const [isFocused, setIsFocused] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchKey, setSearchKey] = useState(0);
-  const [visibleParks, setVisibleParks] = useState([]);
-  const [locationIconColor, setLocationIconColor] = useState("gray");
-  const [showParkAreas, setShowParkAreas] = useState(false);
+  useEffect(() => {
+    if (suggestedParkAreas.length > 0 && suggestedParkAreas) {
+      setCamera({
+        center: {
+          latitude: suggestedParkAreas[currentIndex].coords.latitude,
+          longitude: suggestedParkAreas[currentIndex].coords.longitude,
+        },
+        pitch: 2,
+        heading: 20,
+        zoom: 17.5,
+      });
+    }
+  }, [currentIndex]);
+
+  useEffect(() => {
+    if (camera) {
+      mapRef.current.animateCamera(camera, {duration: 1000});
+    }
+  }, [camera]);
+
+  useEffect(() => {
+    if (mapRegion && mapRef) {
+      mapRef.current.animateToRegion(mapRegion, 1000);
+    }
+  }, [mapRegion]);
+
+  const mapRef = useRef(null);
 
   const resetSearchInput = async () => {
     setSearchQuery("");
     Keyboard.dismiss();
-    setIsFocused(false);
+    setSearchBarIsFocused(false);
     setSearchKey(prevKey => prevKey + 1);
   };
 
@@ -66,13 +107,6 @@ export default function MapScreen() {
     setLocationIconColor("#4285F4");
     resetSearchInput();
     await getLocation();
-    if (location) {
-      setMapRegion({
-        ...mapRegion,
-        latitude: location.latitude,
-        longitude: location.longitude,
-      });
-    }
     setSearchLocation({location: location});
     setShowParkAreas(true);
   };
@@ -89,30 +123,58 @@ export default function MapScreen() {
     const east = region.longitude + region.longitudeDelta / 2;
     const west = region.longitude - region.longitudeDelta / 2;
 
-    const parksInView = parkAreas.filter(park => {
-      return (
-        park.coords.latitude < north &&
-        park.coords.latitude > south &&
-        park.coords.longitude < east &&
-        park.coords.longitude > west
-      );
-    });
+    const parksInView = parkAreas
+      .map((park, index) => ({...park, originalIndex: index}))
+      .filter(park => {
+        return (
+          park.coords.latitude < north &&
+          park.coords.latitude > south &&
+          park.coords.longitude < east &&
+          park.coords.longitude > west
+        );
+      });
+
     setVisibleParks(parksInView);
-    console.log(parksInView.length);
+  };
+
+  const handleCurrentLocationButtonClick = async () => {
+    await getCurrentLocation();
+    setShowMarker(false);
+    setShowParkAreas(true);
   };
 
   const handleIconPress = () => {
-    if (isFocused) {
+    if (searchBarIsFocused) {
       setSearchQuery("");
       Keyboard.dismiss();
-      setIsFocused(false);
+      setSearchBarIsFocused(false);
+      setShowMarker(false);
       setSearchKey(prevKey => prevKey + 1);
     }
+    if (showParkAreas && searchQuery != "") {
+      resetSuggestedParkAreas();
+      setTappedParkArea(null);
+      setShowParkAreas(false);
+    }
+  };
+
+  const handleMarkerPress = index => {
+    setTappedParkArea(parkAreas[index]);
+    setShowParkAreas(true);
+  };
+
+  const loadScrollView = index => {
+    setCurrentIndex(index);
+    scrollViewRef.current.scrollTo({
+      x: index * width,
+      y: 0,
+      animated: true,
+    });
   };
 
   const renderRightButton = () => (
     <Icon
-      name={isFocused ? "close" : "search"}
+      name={searchBarIsFocused ? "close" : "search"}
       size={25}
       color="gray"
       style={{
@@ -131,6 +193,9 @@ export default function MapScreen() {
         style={styles.closeButton}
         onPress={() => {
           setShowParkAreas(false);
+          resetSuggestedParkAreas();
+          setTappedParkArea(null);
+          setShowMarker(false);
         }}
       >
         <Icon name="close" size={25} color="gray" />
@@ -139,10 +204,20 @@ export default function MapScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         pagingEnabled
+        ref={scrollViewRef}
+        onMomentumScrollEnd={e => {
+          const contentOffset = e.nativeEvent.contentOffset.x;
+          const viewSize = e.nativeEvent.layoutMeasurement.width;
+          let currentIndex = Math.floor(contentOffset / viewSize);
+          setCurrentIndex(currentIndex);
+        }}
       >
-        {suggestedParkAreas.map((parkArea, index) => (
-          <ParkAreaCard key={index} parkArea={parkArea} />
-        ))}
+        {suggestedParkAreas.length > 0
+          ? suggestedParkAreas.map((parkArea, index) => (
+              <ParkAreaCard key={index} parkArea={parkArea} />
+            ))
+          : !tappedParkArea && <NoParkAreaFoundCard />}
+        {tappedParkArea && <ParkAreaCard parkArea={tappedParkArea} />}
       </ScrollView>
     </View>
   );
@@ -157,7 +232,7 @@ export default function MapScreen() {
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator size="large" color="brown" />
+        <ActivityIndicator size="large" color="green" />
       </View>
     </Modal>
   );
@@ -183,6 +258,7 @@ export default function MapScreen() {
               latitudeDelta: LATITUDE_DELTA,
               longitudeDelta: LONGITUDE_DELTA,
             });
+            setShowMarker(true);
             Keyboard.dismiss();
             setLocationIconColor("gray");
             setShowParkAreas(true);
@@ -221,8 +297,8 @@ export default function MapScreen() {
           nearbyPlacesAPI="GoogleReverseGeocoding"
           debounce={500}
           textInputProps={{
-            onFocus: () => setIsFocused(true),
-            onBlur: () => setIsFocused(false),
+            onFocus: () => setSearchBarIsFocused(true),
+            onBlur: () => setSearchBarIsFocused(false),
             onChangeText: text => setSearchQuery(text),
             value: searchQuery,
           }}
@@ -230,23 +306,33 @@ export default function MapScreen() {
         />
       </View>
       <MapView
-        provider={PROVIDER_GOOGLE}
+        ref={mapRef}
         style={styles.map}
         customMapStyle={mapStyle}
         region={mapRegion}
         onRegionChangeComplete={
-          showParkAreas ? null : handleRegionChangeComplete
+          showParkAreas
+            ? tappedParkArea != null && handleRegionChangeComplete
+            : handleRegionChangeComplete
         }
+        showsTraffic={true}
+        showsUserLocation={true}
+        userLocationUpdateInterval={5000}
+        showsMyLocationButton={true}
+        toolbarEnabled={false}
+        loadingEnabled={true}
       >
-        <Marker
-          coordinate={{
-            latitude: mapRegion.latitude,
-            longitude: mapRegion.longitude,
-          }}
-          title={"Selected Place"}
-          description={"This is the place you've selected."}
-        />
-        {showParkAreas
+        {showMarker && (
+          <Marker
+            coordinate={{
+              latitude: mapRegion.latitude,
+              longitude: mapRegion.longitude,
+            }}
+            title={"Selected Place"}
+            description={"This is the place you've selected."}
+          />
+        )}
+        {suggestedParkAreas.length > 0
           ? suggestedParkAreas.map((park, index) => (
               <ImageMarker
                 key={index}
@@ -258,6 +344,9 @@ export default function MapScreen() {
                 description={`free slots: ${park.no_free_slots}`}
                 index={index}
                 color={getColorForMarker(index, suggestedParkAreas.length)}
+                onPress={() => {
+                  loadScrollView(index);
+                }}
               />
             ))
           : visibleParks.map((park, index) => (
@@ -269,8 +358,9 @@ export default function MapScreen() {
                 }}
                 title={park.name}
                 description={`free slots: ${park.no_free_slots}`}
-                index={index}
+                index={park.originalIndex}
                 color={getColorForMarker(index, visibleParks.length)}
+                onPress={() => handleMarkerPress(park.originalIndex)}
               />
             ))}
       </MapView>
@@ -278,10 +368,7 @@ export default function MapScreen() {
       {!showParkAreas && (
         <TouchableOpacity
           style={styles.locationIcon}
-          onPress={() => {
-            getCurrentLocation();
-            setShowParkAreas(true); // Show park areas when the current location is fetched
-          }}
+          onPress={handleCurrentLocationButtonClick}
           activeOpacity={0.7}
         >
           <Icon name="my-location" size={25} color={locationIconColor} />
@@ -324,7 +411,7 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
-    marginBottom: -55,
+    marginBottom: -30,
   },
 
   locationIcon: {
