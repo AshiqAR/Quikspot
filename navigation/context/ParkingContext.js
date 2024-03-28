@@ -45,7 +45,6 @@ export const ParkingDataProvider = ({children}) => {
   useEffect(() => {
     const performAsyncFetch = async () => {
       if (searchLocation != null) {
-        console.log("here");
         await fetchSuggestedParkAreas();
       }
     };
@@ -53,7 +52,6 @@ export const ParkingDataProvider = ({children}) => {
   }, [searchLocation]);
 
   const NavigateToParkArea = (latitude, longitude) => {
-    console.log("Navigating");
     Linking.openURL(
       `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving&dir_action=navigate`
     );
@@ -65,6 +63,10 @@ export const ParkingDataProvider = ({children}) => {
       ...details,
     }));
   };
+
+  useEffect(() => {
+    console.log("Booking Details: ", bookingDetails);
+  }, [bookingDetails]);
 
   const requestLocationPermission = async () => {
     try {
@@ -112,10 +114,6 @@ export const ParkingDataProvider = ({children}) => {
     setLocationSharingEnabled(false);
     getLocation();
   }, []);
-
-  useEffect(() => {
-    console.log("Location changed ", location);
-  }, [location]);
 
   function getParkAreasWithinDistance(latitude, longitude, dist, parkAreas) {
     return parkAreas.filter(parkArea => {

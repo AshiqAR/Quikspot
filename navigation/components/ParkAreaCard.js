@@ -1,5 +1,5 @@
 import React from "react";
-import {View, Text, StyleSheet, Dimensions} from "react-native";
+import {View, Text, StyleSheet, Dimensions, Pressable} from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const {width} = Dimensions.get("window");
@@ -21,9 +21,9 @@ const getRatingColor = rating => {
   return `rgb(${interpolatedColor.r}, ${interpolatedColor.g}, ${interpolatedColor.b})`;
 };
 
-const ParkAreaCard = ({parkArea}) => {
+const ParkAreaCard = ({parkArea, onPress}) => {
   return (
-    <View style={styles.card}>
+    <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.header}>
         <Text style={styles.title}>{parkArea.name}</Text>
         <View style={styles.rateContainer}>
@@ -63,7 +63,7 @@ const ParkAreaCard = ({parkArea}) => {
           </View>
         ))}
       </View>
-    </View>
+    </Pressable>
   );
 };
 

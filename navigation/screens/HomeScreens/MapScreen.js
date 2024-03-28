@@ -27,7 +27,7 @@ const ASPECT_RATIO = width / height;
 const LATITUDE_DELTA = 1 / 111; // Roughly 10 kilometers
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
-export default function MapScreen() {
+export default function MapScreen({navigation}) {
   const [searchBarIsFocused, setSearchBarIsFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchKey, setSearchKey] = useState(0);
@@ -45,7 +45,7 @@ export default function MapScreen() {
     getLocation,
     suggestedParkAreas,
     resetSuggestedParkAreas,
-    setSuggestedParkAreas,
+    updateBookingDetails,
     isLoading,
   } = useParkingDetails();
   const [mapRegion, setMapRegion] = useState({
@@ -58,6 +58,17 @@ export default function MapScreen() {
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
+    if (location) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA,
+        },
+        1000
+      );
+    }
     resetSuggestedParkAreas();
     setShowParkAreas(false);
   }, []);
@@ -187,40 +198,61 @@ export default function MapScreen() {
     />
   );
 
-  const renderParkAreas = () => (
-    <View style={styles.parkAreasContainer}>
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={() => {
-          setShowParkAreas(false);
-          resetSuggestedParkAreas();
-          setTappedParkArea(null);
-          setShowMarker(false);
-        }}
-      >
-        <Icon name="close" size={25} color="gray" />
-      </TouchableOpacity>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        pagingEnabled
-        ref={scrollViewRef}
-        onMomentumScrollEnd={e => {
-          const contentOffset = e.nativeEvent.contentOffset.x;
-          const viewSize = e.nativeEvent.layoutMeasurement.width;
-          let currentIndex = Math.floor(contentOffset / viewSize);
-          setCurrentIndex(currentIndex);
-        }}
-      >
-        {suggestedParkAreas.length > 0
-          ? suggestedParkAreas.map((parkArea, index) => (
-              <ParkAreaCard key={index} parkArea={parkArea} />
-            ))
-          : !tappedParkArea && <NoParkAreaFoundCard />}
-        {tappedParkArea && <ParkAreaCard parkArea={tappedParkArea} />}
-      </ScrollView>
-    </View>
-  );
+  const renderParkAreas = () => {
+    const initiateBooking = parkArea => {
+      updateBookingDetails({parkArea});
+      navigation.navigate("BookingScreen");
+    };
+
+    return (
+      <View style={styles.parkAreasContainer}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => {
+            setShowParkAreas(false);
+            resetSuggestedParkAreas();
+            setTappedParkArea(null);
+            setShowMarker(false);
+          }}
+        >
+          <Icon name="close" size={25} color="gray" />
+        </TouchableOpacity>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          pagingEnabled
+          ref={scrollViewRef}
+          onMomentumScrollEnd={e => {
+            const contentOffset = e.nativeEvent.contentOffset.x;
+            const viewSize = e.nativeEvent.layoutMeasurement.width;
+            let currentIndex = Math.floor(contentOffset / viewSize);
+            setCurrentIndex(currentIndex);
+          }}
+        >
+          {suggestedParkAreas.length > 0
+            ? suggestedParkAreas.map((park, index) => (
+                <ParkAreaCard
+                  key={index}
+                  parkArea={park}
+                  onPress={() => {
+                    console.log(suggestedParkAreas[index]);
+                    initiateBooking(suggestedParkAreas[index]);
+                  }}
+                />
+              ))
+            : !tappedParkArea && <NoParkAreaFoundCard />}
+          {tappedParkArea && (
+            <ParkAreaCard
+              parkArea={tappedParkArea}
+              onPress={() => {
+                initiateBooking(tappedParkArea);
+              }}
+            />
+          )}
+        </ScrollView>
+      </View>
+    );
+  };
 
   const RenderModal = () => (
     <Modal transparent={true} visible={isLoading}>

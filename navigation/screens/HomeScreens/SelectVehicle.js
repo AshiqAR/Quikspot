@@ -36,12 +36,8 @@ const vehicles = [
 
 export default function MyVehicles({navigation}) {
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
-  const {
-    locationSharingEnabled,
-    getLocation,
-    updateBookingDetails,
-    bookingDetails,
-  } = useParkingDetails();
+  const {locationSharingEnabled, getLocation, updateBookingDetails} =
+    useParkingDetails();
 
   const toggleSelection = id => {
     setSelectedVehicleId(prevId => (prevId === id ? null : id));
