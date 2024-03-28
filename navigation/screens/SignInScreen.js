@@ -8,12 +8,14 @@ import {
   Alert,
   StyleSheet,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from "react-native";
 import {BACKEND_URL} from "@env";
 import {useAuth} from "../context/AuthContext";
 import quikSpotLogo from "../../src/assets/images/quikspot.png";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import axios from "axios";
+import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
 
 export default function SignInScreen({navigation, route}) {
   const {signIn} = useAuth();
@@ -22,18 +24,20 @@ export default function SignInScreen({navigation, route}) {
   const [mobileNumberIsFocused, setMobileNumberIsFocused] = useState(false);
   const [passwordIsFocused, setPasswordIsFocused] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    startLoading();
     const requestData = {
       phoneNumber: mobileNumber,
       password: password,
     };
 
-    axios
+    await axios
       .post(`${BACKEND_URL}/api/user/signin`, requestData)
       .then(response => {
         console.log(response.data, "here");
@@ -68,6 +72,9 @@ export default function SignInScreen({navigation, route}) {
         } else {
           Alert.alert("Error", "An unexpected error occurred");
         }
+      })
+      .finally(() => {
+        stopLoading();
       });
   };
 
@@ -120,9 +127,17 @@ export default function SignInScreen({navigation, route}) {
           </Pressable>
         </View>
         <Pressable style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Sign In</Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.buttonText}>Sign In</Text>
+          )}
         </Pressable>
-        <Pressable style={styles.signUpContainer} onPress={navigateToSignUp}>
+        <Pressable
+          style={styles.signUpContainer}
+          disabled={isLoading}
+          onPress={navigateToSignUp}
+        >
           <Text style={styles.signUpTextDialogue}>Don't have an account? </Text>
           <Text style={styles.signUpText}> Sign Up</Text>
         </Pressable>
@@ -181,6 +196,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 5,
     marginTop: 10,
+    height: 55,
   },
   signUpContainer: {
     flexDirection: "row",

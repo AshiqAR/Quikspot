@@ -11,8 +11,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import useCloseWithIndicator from "../customHooks/useCloseWithIndicator";
 import LinearGradient from "react-native-linear-gradient";
+import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
+import {BACKEND_URL} from "@env";
+import {useAuth} from "../context/AuthContext";
+import axios from "axios";
+
+const topupURL = `${BACKEND_URL}/api/user/wallet/topup`;
 
 function waitForRandomTime(maxTime = 1500) {
   const randomTime = Math.floor(Math.random() * maxTime);
@@ -24,26 +29,50 @@ function waitForRandomTime(maxTime = 1500) {
 
 export default function Wallet({user}) {
   const [isAdding, setIsAdding] = useState(false);
-  const [fadeAnim] = useState(new Animated.Value(0)); // Initial value for opacity: 0
+  const [fadeAnim] = useState(new Animated.Value(0));
   const [amount, setAmount] = useState("");
   const animation = useRef(new Animated.Value(0)).current;
-  const [handleTopUp, isLoading] = useCloseWithIndicator(async () => {
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
+  const {setUser} = useAuth();
+
+  const handleTopUp = async () => {
+    startLoading();
     console.log("wallet topup");
-    if (isNaN(parseInt(amount)) || parseInt(amount) < 0) {
-      await waitForRandomTime(2000);
+    const topUpAmount = parseInt(amount);
+    console.log(topUpAmount);
+    if (isNaN(topUpAmount) || topUpAmount < 0) {
+      await waitForRandomTime(1000);
       Alert.alert("Error", "Please enter a valid amount");
       setAmount("");
     } else {
-      await waitForRandomTime(7000);
-      user.walletBalance += parseInt(amount);
-      Alert.alert(
-        "Success",
-        `Successfully added \u20B9${amount} to your wallet`
-      );
-      setAmount("");
-      setIsAdding(false);
+      console.log(user.phoneNumber, topUpAmount);
+      await axios
+        .post(topupURL, {amount: topUpAmount, phoneNumber: user.phoneNumber})
+        .then(response => {
+          const {status, data} = response;
+          if (status === 200) {
+            setUser(data.user);
+            Alert.alert(
+              "Success",
+              `Successfully added \u20B9${amount} to your wallet`
+            );
+          } else if (status === 400) {
+            Alert.alert("Error", data.message);
+          } else if (status === 500) {
+            Alert.alert("Error", "Internal Server Error");
+          }
+        })
+        .catch(error => {
+          console.log(error);
+          Alert.alert("Error", "Internal Server Error");
+        })
+        .finally(() => {
+          setAmount("");
+          setIsAdding(false);
+        });
     }
-  });
+    stopLoading();
+  };
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -70,7 +99,7 @@ export default function Wallet({user}) {
 
   return (
     <LinearGradient
-      colors={["#0F2027", "#203A43", "#2C5364"]} // Updated gradient colors
+      colors={["#0F2027", "#203A43", "#2C5364"]}
       start={{x: 0, y: 0}}
       end={{x: 1, y: 1}}
       style={{
@@ -92,13 +121,11 @@ export default function Wallet({user}) {
           <View
             style={{
               flex: 1,
-              backgroundColor: "rgba(0, 0, 0, 0.1)",
+              backgroundColor: "rgba(0, 0, 0, 0)",
               alignItems: "center",
               justifyContent: "center",
             }}
-          >
-            <ActivityIndicator size="large" color="black" />
-          </View>
+          ></View>
         </Modal>
       )}
       <View
@@ -168,7 +195,7 @@ export default function Wallet({user}) {
           <Animated.View
             style={[
               {
-                opacity: fadeAnim, // Bind opacity to animated value
+                opacity: fadeAnim,
               },
             ]}
           >
@@ -200,18 +227,15 @@ export default function Wallet({user}) {
                   onPress={handleTopUp}
                   style={[styles.button, styles.topUpButton]}
                 >
-                  <Text style={styles.buttonText}>Top Up</Text>
+                  {isLoading ? (
+                    <ActivityIndicator color={"darkgreen"} size={"small"} />
+                  ) : (
+                    <Text style={styles.buttonText}>Top Up</Text>
+                  )}
                 </Pressable>
               </LinearGradient>
-              {/* <Pressable
-                onPress={handleTopUp}
-                style={[styles.button, styles.topUpButton]}
-                android_ripple={{color: "lightgray", borderless: false}}
-              >
-                <Text style={styles.buttonText}>Top Up</Text>
-              </Pressable> */}
               <LinearGradient
-                colors={["#D64550", "#831A2B"]} // A softer, more subtle gradient
+                colors={["#D64550", "#831A2B"]}
                 style={styles.buttonGradient}
               >
                 <Pressable
@@ -221,13 +245,6 @@ export default function Wallet({user}) {
                   <Text style={styles.buttonText}>Cancel</Text>
                 </Pressable>
               </LinearGradient>
-              {/* <Pressable
-                onPress={handleCancel}
-                style={[styles.button, styles.cancelButton]}
-                android_ripple={{color: "lightgray", borderless: false}}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </Pressable> */}
             </View>
           </Animated.View>
         )}
@@ -312,11 +329,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   inputGradient: {
-    borderRadius: 5,
+    borderRadius: 10,
   },
   input: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 5,
+    borderRadius: 10,
     fontSize: 18,
     color: "white",
     padding: 10,

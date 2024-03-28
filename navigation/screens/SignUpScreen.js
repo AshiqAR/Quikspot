@@ -7,11 +7,13 @@ import {
   StyleSheet,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import {BACKEND_URL} from "@env";
 import CustomHeader from "../components/CustomHeader";
 import Icon from "react-native-vector-icons/Ionicons";
 import axios from "axios";
+import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
 
 const LabelInput = ({label, ...props}) => (
   <View style={styles.inputContainer}>
@@ -32,12 +34,14 @@ export default function SignUpScreen({navigation}) {
     city: "",
     state: "",
   });
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
 
   const handleInputChange = (name, value) => {
     setFormData({...formData, [name]: value});
   };
 
-  const signUp = () => {
+  const signUp = async () => {
+    startLoading();
     if (
       !formData.name ||
       !formData.password ||
@@ -73,7 +77,7 @@ export default function SignUpScreen({navigation}) {
       state: formData.state,
     };
 
-    axios
+    await axios
       .post(`${BACKEND_URL}/api/user/signup`, requestData)
       .then(response => {
         // Handle the success response
@@ -119,6 +123,9 @@ export default function SignUpScreen({navigation}) {
         } else {
           Alert.alert("Error", error.message);
         }
+      })
+      .finally(() => {
+        stopLoading();
       });
   };
 
@@ -188,9 +195,18 @@ export default function SignUpScreen({navigation}) {
           style={styles.nextButton}
           onPress={signUp}
           android_ripple={{color: "gray", borderless: false}}
+          disabled={isLoading}
         >
           <Text style={styles.nextButtonText}>Sign Up</Text>
-          <Icon name="arrow-forward-circle-outline" size={30} color={"white"} />
+          {isLoading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Icon
+              name="arrow-forward-circle-outline"
+              size={30}
+              color={"white"}
+            />
+          )}
         </Pressable>
       </View>
     </View>

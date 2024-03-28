@@ -31,7 +31,6 @@ export default function Account({navigation}) {
 
   const handlePress = action => {
     if (!isScrolling) {
-      // console.log(`Pressed ${action}`);
       switch (action) {
         case "ManageMyAccount":
           navigation.navigate("ManageAccount");
@@ -61,7 +60,6 @@ export default function Account({navigation}) {
   };
 
   const [handleClose, isLoading] = useCloseWithIndicator(async () => {
-    // console.log('Close account');
     await waitForRandomTime(2000);
     navigation.navigate("Home");
   });
