@@ -10,14 +10,15 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
 } from "react-native";
-import {BACKEND_URL} from "@env";
 import {useAuth} from "../context/AuthContext";
 import quikSpotLogo from "../../src/assets/images/quikspot.png";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import axios from "axios";
 import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
+import backendUrls from "../connections/backendUrls";
 
 export default function SignInScreen({navigation, route}) {
+  const {signInURL} = backendUrls;
   const {signIn} = useAuth();
   const [mobileNumber, setMobileNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -38,7 +39,7 @@ export default function SignInScreen({navigation, route}) {
     };
 
     await axios
-      .post(`${BACKEND_URL}/api/user/signin`, requestData)
+      .post(signInURL, requestData)
       .then(response => {
         console.log(response.data, "here");
         if (response.data.success) {

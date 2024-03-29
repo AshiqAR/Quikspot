@@ -13,11 +13,11 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import LinearGradient from "react-native-linear-gradient";
 import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
-import {BACKEND_URL} from "@env";
 import {useAuth} from "../context/AuthContext";
 import axios from "axios";
+import backendUrls from "../connections/backendUrls";
 
-const topupURL = `${BACKEND_URL}/api/user/wallet/topup`;
+const {topupWalletURL} = backendUrls;
 
 function waitForRandomTime(maxTime = 1500) {
   const randomTime = Math.floor(Math.random() * maxTime);
@@ -40,14 +40,17 @@ export default function Wallet({user}) {
     console.log("wallet topup");
     const topUpAmount = parseInt(amount);
     console.log(topUpAmount);
-    if (isNaN(topUpAmount) || topUpAmount < 0) {
+    if (isNaN(topUpAmount) || topUpAmount <= 0) {
       await waitForRandomTime(1000);
       Alert.alert("Error", "Please enter a valid amount");
       setAmount("");
     } else {
       console.log(user.phoneNumber, topUpAmount);
       await axios
-        .post(topupURL, {amount: topUpAmount, phoneNumber: user.phoneNumber})
+        .post(topupWalletURL, {
+          amount: topUpAmount,
+          phoneNumber: user.phoneNumber,
+        })
         .then(response => {
           const {status, data} = response;
           if (status === 200) {

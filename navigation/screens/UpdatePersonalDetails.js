@@ -8,21 +8,98 @@ import {
   Pressable,
   Alert,
   Keyboard,
-  KeyboardAvoidingView,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import {useAuth} from "../context/AuthContext";
+import backendUrls from "../connections/backendUrls";
+import axios from "axios";
+import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
 
 export default function UpdatePersonalDetails() {
-  const {user} = useAuth();
+  const {user, setUser} = useAuth();
   const [userDetails, setUserDetails] = useState(user);
+  const {updateDetailsURL} = backendUrls;
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
 
-  const handleUpdateDetails = () => {
-    console.log("Updated Details:", userDetails);
-    Alert.alert("Updated", "Details Updated Successfully!");
+  const handleUpdateDetails = async () => {
+    startLoading();
+    try {
+      Keyboard.dismiss();
+      const {name, phoneNumber, email, address, city, state, pincode} =
+        userDetails;
+      if (
+        name === "" ||
+        phoneNumber === "" ||
+        email === "" ||
+        address === "" ||
+        city === "" ||
+        state === "" ||
+        pincode === ""
+      ) {
+        Alert.alert("Empty Fields Exist", "Fields cannot be empty.");
+        return;
+      }
+      if (pincode.length !== 6) {
+        Alert.alert("Invalid Pincode", "Pincode should be 6 digits long.");
+        return;
+      }
+
+      const response = await axios.post(updateDetailsURL, {
+        name,
+        phoneNumber,
+        email,
+        address,
+        city,
+        state,
+        pincode,
+      });
+
+      if (response.status === 200) {
+        console.log("User details updated successfully!");
+        setUser(response.data.user);
+        Alert.alert("Success", "User details updated successfully!");
+      } else {
+        console.log("An unexpected response was received.");
+        Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      }
+    } catch (error) {
+      if (error.response) {
+        console.log(error.response.data);
+        const errorMessage =
+          error.response.data.message || "An error occurred. Please try again.";
+        Alert.alert("Error", errorMessage);
+      } else if (error.request) {
+        console.log(error.request);
+        Alert.alert(
+          "Error",
+          "No response from the server. Please check your internet connection."
+        );
+      } else {
+        console.log("Error", error.message);
+        Alert.alert("Error", "An error occurred. Please try again.");
+      }
+    } finally {
+      stopLoading();
+    }
   };
 
   return (
     <View style={{flex: 1}}>
+      {isLoading && (
+        <Modal transparent={true} visible={isLoading}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <ActivityIndicator size="large" color="#004F7C" />
+          </View>
+        </Modal>
+      )}
       <ScrollView style={styles.container}>
         <Text style={styles.label}>Name</Text>
         <TextInput
@@ -89,7 +166,11 @@ export default function UpdatePersonalDetails() {
         ]}
         onPress={handleUpdateDetails}
       >
-        <Text style={styles.buttonText}>Update</Text>
+        {isLoading ? (
+          <Text style={styles.buttonText}>Updating...</Text>
+        ) : (
+          <Text style={styles.buttonText}>Update</Text>
+        )}
       </Pressable>
     </View>
   );
@@ -125,7 +206,7 @@ const styles = StyleSheet.create({
   updateButton: {
     backgroundColor: "#004F7C",
     marginHorizontal: 15,
-    marginVertical: 5,
+    marginVertical: 10,
     padding: 10,
     alignItems: "center",
     borderRadius: 10,

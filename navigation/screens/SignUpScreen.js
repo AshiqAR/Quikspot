@@ -9,11 +9,11 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import {BACKEND_URL} from "@env";
 import CustomHeader from "../components/CustomHeader";
 import Icon from "react-native-vector-icons/Ionicons";
 import axios from "axios";
 import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
+import backendUrls from "../connections/backendUrls";
 
 const LabelInput = ({label, ...props}) => (
   <View style={styles.inputContainer}>
@@ -35,6 +35,7 @@ export default function SignUpScreen({navigation}) {
     state: "",
   });
   const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
+  const {signUpURL} = backendUrls;
 
   const handleInputChange = (name, value) => {
     setFormData({...formData, [name]: value});
@@ -78,7 +79,7 @@ export default function SignUpScreen({navigation}) {
     };
 
     await axios
-      .post(`${BACKEND_URL}/api/user/signup`, requestData)
+      .post(signUpURL, requestData)
       .then(response => {
         // Handle the success response
         const {data} = response;
