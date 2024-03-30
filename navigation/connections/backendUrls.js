@@ -8,6 +8,7 @@ const backendUrls = {
   signOutURL: `${BACKEND_URL}/api/user/signout`,
   changePasswordURL: `${BACKEND_URL}/api/user/changePassword`,
   addVehicleURL: `${BACKEND_URL}/api/user/addVehicle`,
+  sendParkAreaVerificationURL: `${BACKEND_URL}/api/parkArea/sendParkAreaDetailstToBeVerified`,
 };
 
 export default backendUrls;

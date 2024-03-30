@@ -10,7 +10,10 @@ import React from "react";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import {useAuth} from "../context/AuthContext";
 
-const titleCase = str => str.replace(/\b\w/g, char => char.toUpperCase());
+const titleCase = str => {
+  if (!str) return "";
+  return str.replace(/\b\w/g, char => char.toUpperCase());
+};
 
 export default function MyVehicles({navigation}) {
   const {user} = useAuth();

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from "react";
 import {
   View,
   Text,
@@ -6,13 +6,14 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import {useRentASpaceContext} from '../../context/RentASpaceContext';
+} from "react-native";
+import Icon from "react-native-vector-icons/Ionicons";
+import {useRentASpaceContext} from "../../context/RentASpaceContext";
 
 export default function Screen2({navigation}) {
   const {parkAreaDetails, updateParkAreaDetails} = useRentASpaceContext();
-  const parkSpaceOptions = ['Home', 'Outdoor', 'Dedicated'];
+
+  const parkSpaceOptions = ["Home", "Outdoor", "Dedicated"];
   const [currentLocation, setCurrentLocation] = useState({
     latitude: 0,
     longitude: 0,
@@ -23,23 +24,19 @@ export default function Screen2({navigation}) {
     const estimatedCarsParked = parseInt(parkAreaDetails.estimatedCapacity);
     const pricePerHour = parseInt(parkAreaDetails.expectedPricePerHour);
 
-    // Check if values are filled in and valid
-
     if (
       isNaN(estimatedCarsParked) ||
       estimatedCarsParked <= 0 ||
       isNaN(pricePerHour) ||
       pricePerHour <= 0 ||
-      parkAreaDetails.parkSpaceType == ''
+      parkAreaDetails.parkSpaceType == ""
     ) {
       alert(
-        'Please fill in all required fields with valid numbers where applicable.',
+        "Please fill in all required fields with valid numbers where applicable."
       );
       return;
     }
-
-    console.log(parkAreaDetails);
-    navigation.navigate('Screen3');
+    navigation.navigate("Screen3");
   };
 
   const handleInputChange = (name, value) => {
@@ -47,7 +44,7 @@ export default function Screen2({navigation}) {
   };
 
   const handleLocationFetch = () => {
-    handleInputChange('location', currentLocation);
+    handleInputChange("location", currentLocation);
   };
 
   const handleToggleFacility = index => {
@@ -57,11 +54,11 @@ export default function Screen2({navigation}) {
           return {...facility, value: !facility.value};
         }
         return facility;
-      },
+      }
     );
     updateParkAreaDetails.updateDetails(
-      'facilitiesAvailable',
-      updatedFacilities,
+      "facilitiesAvailable",
+      updatedFacilities
     );
   };
 
@@ -81,15 +78,16 @@ export default function Screen2({navigation}) {
       <Pressable
         key={index}
         style={styles.radioContainer}
-        onPress={() => handleInputChange('parkSpaceType', option)}>
+        onPress={() => handleInputChange("parkSpaceType", option)}
+      >
         <Icon
           name={
             parkAreaDetails.parkSpaceType === option
-              ? 'radio-button-on'
-              : 'radio-button-off'
+              ? "radio-button-on"
+              : "radio-button-off"
           }
           size={20}
-          color={'black'}
+          color={"black"}
         />
         <Text style={styles.radioLabel}>{option}</Text>
       </Pressable>
@@ -102,14 +100,14 @@ export default function Screen2({navigation}) {
         <LabelInput
           label="Estimated Parking Capacity (No. of Cars)*"
           value={parkAreaDetails.estimatedCapacity}
-          onChangeText={value => handleInputChange('estimatedCapacity', value)}
+          onChangeText={value => handleInputChange("estimatedCapacity", value)}
           keyboardType="numeric"
         />
         <LabelInput
           label="Expected Price Per Hour*"
           value={parkAreaDetails.expectedPricePerHour}
           onChangeText={value =>
-            handleInputChange('expectedPricePerHour', value)
+            handleInputChange("expectedPricePerHour", value)
           }
           keyboardType="numeric"
         />
@@ -117,28 +115,30 @@ export default function Screen2({navigation}) {
           <Text style={styles.label}>Type of Park Space*</Text>
           <View style={styles.radioGroup}>{renderParkSpaceOptions()}</View>
         </View>
-        <View style={[{alignItems: 'center', paddingVertical: 10}]}>
+        <View style={[{alignItems: "center", paddingVertical: 10}]}>
           <Text style={styles.label}>Park Space Facilities Available</Text>
         </View>
 
         {renderFacilityToggles()}
 
         <View
-          style={[styles.label, {alignItems: 'center', paddingVertical: 10}]}>
+          style={[styles.label, {alignItems: "center", paddingVertical: 10}]}
+        >
           <Text style={styles.label}>Locate the parking area</Text>
         </View>
         <Pressable
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
+            flexDirection: "row",
+            alignItems: "center",
             marginVertical: 10,
-            backgroundColor: '#dfdfdf',
+            backgroundColor: "#dfdfdf",
             padding: 10,
             borderRadius: 5,
           }}
-          onPress={handleLocationFetch}>
+          onPress={handleLocationFetch}
+        >
           <Icon name="location-outline" size={24} color="gray" />
-          <Text style={{marginLeft: 8, color: 'gray'}}>
+          <Text style={{marginLeft: 8, color: "gray"}}>
             Use Current Location
           </Text>
         </Pressable>
@@ -148,9 +148,10 @@ export default function Screen2({navigation}) {
         <Pressable
           style={styles.nextButton}
           onPress={handleNextPress}
-          android_ripple={{color: 'gray', borderless: false}}>
+          android_ripple={{color: "gray", borderless: false}}
+        >
           <Text style={styles.nextButtonText}>Next</Text>
-          <Icon name="arrow-forward-circle-outline" size={30} color={'white'} />
+          <Icon name="arrow-forward-circle-outline" size={30} color={"white"} />
         </Pressable>
       </View>
     </View>
@@ -168,9 +169,9 @@ const LabelToggle = ({label, value, onToggle}) => (
   <Pressable onPress={onToggle} style={styles.toggleContainer}>
     <Text style={styles.label}>{label}</Text>
     <Icon
-      name={value ? 'checkbox-outline' : 'square-outline'}
+      name={value ? "checkbox-outline" : "square-outline"}
       size={24}
-      color={'black'}
+      color={"black"}
     />
   </Pressable>
 );
@@ -196,10 +197,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     borderRadius: 5,
     marginBottom: 15,
-    backgroundColor: '#f9f9f9',
-    borderColor: 'gray',
+    backgroundColor: "#f9f9f9",
+    borderColor: "gray",
 
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -207,42 +208,42 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   radioGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     paddingVertical: 10,
   },
   radioContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   radioLabel: {
     marginLeft: 8,
   },
   toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
   },
   nextButtonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     height: 70,
     paddingHorizontal: 15,
   },
   nextButton: {
-    backgroundColor: 'black',
+    backgroundColor: "black",
     borderRadius: 10,
     height: 50,
-    width: '100%',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexDirection: 'row',
+    width: "100%",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexDirection: "row",
     paddingHorizontal: 30,
   },
   nextButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

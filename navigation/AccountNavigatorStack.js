@@ -10,25 +10,10 @@ import AddNewVehicle from "./screens/AddNewVehicle";
 import ChangePassword from "./screens/ChangePassword";
 import UpdatePersonalDetails from "./screens/UpdatePersonalDetails";
 import TransactionsScreen from "./screens/TransactionsScreen";
-import RentParkSpace from "./screens/RentParkSpace";
-import Screen1 from "./screens/RentYourSpaceScreens/Screen1";
-import Screen2 from "./screens/RentYourSpaceScreens/Screen2";
-import Screen3 from "./screens/RentYourSpaceScreens/Screen3";
-
 import ParkSpaceDetails from "./screens/ParkSpaceDetails";
 import CustomHeader from "./components/CustomHeader";
 import {UserParkSpacesProvider} from "./context/UserParkSpacesContext";
-import {RentASpaceProvider} from "./context/RentASpaceContext";
-
-function withRentASpaceProvider(Component) {
-  return function Wrapper(props) {
-    return (
-      <RentASpaceProvider>
-        <Component {...props} />
-      </RentASpaceProvider>
-    );
-  };
-}
+import RentYourSpaceStack from "./RentYourSpaceStack";
 
 function withUserParkSpacesProvider(Component) {
   return function Wrapper(props) {
@@ -148,32 +133,11 @@ export default function AccountNavigatorStack() {
         }}
       />
       <Stack.Screen
-        name="RentParkSpace"
-        component={withRentASpaceProvider(RentParkSpace)}
+        name="RentYourSpaceStack"
+        component={RentYourSpaceStack}
         options={{
-          title: "Rent Park Space",
-        }}
-      />
-      <Stack.Screen
-        name="Screen1"
-        component={withRentASpaceProvider(Screen1)}
-        options={{
-          title: "Rent Park Space",
+          title: "RentPark Space",
           headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="Screen2"
-        component={withRentASpaceProvider(Screen2)}
-        options={{
-          title: "Rent Park Space",
-        }}
-      />
-      <Stack.Screen
-        name="Screen3"
-        component={withRentASpaceProvider(Screen3)}
-        options={{
-          title: "Rent Park Space",
         }}
       />
     </Stack.Navigator>

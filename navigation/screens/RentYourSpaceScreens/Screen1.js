@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState} from "react";
 import {
   View,
   Text,
@@ -8,11 +8,11 @@ import {
   ScrollView,
   BackHandler,
   Alert,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import {useRentASpaceContext} from '../../context/RentASpaceContext';
-import {useFocusEffect} from '@react-navigation/native';
-import CustomHeader from '../../components/CustomHeader';
+} from "react-native";
+import Icon from "react-native-vector-icons/Ionicons";
+import {useRentASpaceContext} from "../../context/RentASpaceContext";
+import {useFocusEffect} from "@react-navigation/native";
+import CustomHeader from "../../components/CustomHeader";
 
 export default function Screen1({navigation}) {
   const {parkAreaDetails, updateParkAreaDetails} = useRentASpaceContext();
@@ -23,23 +23,23 @@ export default function Screen1({navigation}) {
       navigation.goBack();
     } else {
       Alert.alert(
-        'Confirm',
-        'If you go back, entered data will get discarded.',
+        "Confirm",
+        "If you go back, entered data will get discarded.",
         [
           {
-            text: 'Discard',
+            text: "Discard",
             onPress: () => {
               updateParkAreaDetails.resetUserDetails();
               navigation.goBack();
             },
-            style: 'destructive',
+            style: "destructive",
           },
           {
-            text: 'Continue',
-            style: 'cancel',
+            text: "Continue",
+            style: "cancel",
           },
         ],
-        {cancelable: false},
+        {cancelable: false}
       );
       return true;
     }
@@ -48,28 +48,41 @@ export default function Screen1({navigation}) {
   useFocusEffect(
     React.useCallback(() => {
       const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
-        handleBackPress,
+        "hardwareBackPress",
+        handleBackPress
       );
       return () => backHandler.remove();
-    }, [handleBackPress]),
+    }, [handleBackPress])
   );
 
   const handleNextPress = () => {
     if (
       !parkAreaDetails.name ||
-      !parkAreaDetails.phone ||
+      !parkAreaDetails.phoneNumber ||
       !parkAreaDetails.email ||
       !parkAreaDetails.address ||
       !parkAreaDetails.city ||
       !parkAreaDetails.district ||
       !parkAreaDetails.state ||
-      !parkAreaDetails.pincode
+      !parkAreaDetails.pincode ||
+      !parkAreaDetails.parkSpaceName
     ) {
-      alert('Please fill in all required fields.');
+      Alert.alert(
+        "Required Fields are Empty",
+        "Please fill in all required fields."
+      );
       return;
     }
-    navigation.navigate('Screen2');
+    if (parkAreaDetails.pincode.length !== 6) {
+      Alert.alert("Invalid Pincode", "Please enter a valid pincode.");
+      return;
+    }
+    // check the email using regular expression
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parkAreaDetails.email)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address.");
+      return;
+    }
+    navigation.navigate("Screen2");
   };
 
   const handleInputChange = (name, value) => {
@@ -82,7 +95,7 @@ export default function Screen1({navigation}) {
       <View>
         <CustomHeader
           navigation={navigation}
-          title="Rent your Space"
+          title="Rent your Park Space"
           onBackPress={handleBackPress}
         />
       </View>
@@ -90,60 +103,63 @@ export default function Screen1({navigation}) {
         <LabelInput
           label="Name*"
           value={parkAreaDetails.name}
-          onChangeText={value => handleInputChange('name', value)}
+          onChangeText={value => handleInputChange("name", value)}
         />
         <LabelInput
           label="Phone Number*"
-          value={parkAreaDetails.phone}
-          onChangeText={value => handleInputChange('phone', value)}
+          value={parkAreaDetails.phoneNumber}
+          onChangeText={value => handleInputChange("phoneNumber", value)}
           keyboardType="phone-pad"
+          editable={false}
         />
         <LabelInput
           label="Alternate Phone Number"
-          value={parkAreaDetails.alternatePhone}
-          onChangeText={value => handleInputChange('alternatePhone', value)}
+          value={parkAreaDetails.alternatePhoneNumber}
+          onChangeText={value =>
+            handleInputChange("alternatePhoneNumber", value)
+          }
           keyboardType="phone-pad"
         />
         <LabelInput
           label="Email Address*"
           value={parkAreaDetails.email}
-          onChangeText={value => handleInputChange('email', value)}
+          onChangeText={value => handleInputChange("email", value)}
           keyboardType="email-address"
         />
         <LabelInput
-          label="Park Space Name"
+          label="Park Space Name*"
           value={parkAreaDetails.parkSpaceName}
-          onChangeText={value => handleInputChange('parkSpaceName', value)}
+          onChangeText={value => handleInputChange("parkSpaceName", value)}
         />
         <LabelInput
           label="Address*"
           value={parkAreaDetails.address}
-          onChangeText={value => handleInputChange('address', value)}
+          onChangeText={value => handleInputChange("address", value)}
         />
         <LabelInput
           label="Street"
           value={parkAreaDetails.street}
-          onChangeText={value => handleInputChange('street', value)}
+          onChangeText={value => handleInputChange("street", value)}
         />
         <LabelInput
           label="City*"
           value={parkAreaDetails.city}
-          onChangeText={value => handleInputChange('city', value)}
+          onChangeText={value => handleInputChange("city", value)}
         />
         <LabelInput
           label="District*"
           value={parkAreaDetails.district}
-          onChangeText={value => handleInputChange('district', value)}
+          onChangeText={value => handleInputChange("district", value)}
         />
         <LabelInput
           label="State*"
           value={parkAreaDetails.state}
-          onChangeText={value => handleInputChange('state', value)}
+          onChangeText={value => handleInputChange("state", value)}
         />
         <LabelInput
           label="Pincode*"
           value={parkAreaDetails.pincode}
-          onChangeText={value => handleInputChange('pincode', value)}
+          onChangeText={value => handleInputChange("pincode", value)}
           keyboardType="numeric"
         />
       </ScrollView>
@@ -152,9 +168,10 @@ export default function Screen1({navigation}) {
         <Pressable
           style={styles.nextButton}
           onPress={handleNextPress}
-          android_ripple={{color: 'gray', borderless: false}}>
+          android_ripple={{color: "gray", borderless: false}}
+        >
           <Text style={styles.nextButtonText}>Next</Text>
-          <Icon name="arrow-forward-circle-outline" size={30} color={'white'} />
+          <Icon name="arrow-forward-circle-outline" size={30} color={"white"} />
         </Pressable>
       </View>
     </View>
@@ -171,9 +188,9 @@ const LabelInput = ({label, ...props}) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    backgroundColor: 'white',
+    flexDirection: "column",
+    justifyContent: "space-between",
+    backgroundColor: "white",
   },
   scrollSection: {
     paddingHorizontal: 20,
@@ -192,10 +209,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     borderRadius: 5,
     marginBottom: 15,
-    backgroundColor: '#f9f9f9',
-    borderColor: 'gray',
+    backgroundColor: "#f9f9f9",
+    borderColor: "gray",
 
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -203,24 +220,24 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   nextButtonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     height: 70,
     paddingHorizontal: 15,
   },
   nextButton: {
-    backgroundColor: 'black',
+    backgroundColor: "black",
     borderRadius: 10,
     height: 50,
-    width: '100%',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexDirection: 'row',
+    width: "100%",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexDirection: "row",
     paddingHorizontal: 30,
   },
   nextButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

@@ -48,7 +48,7 @@ export default function Account({navigation}) {
           navigation.navigate("ManageParkSpace");
           break;
         case "RentSpaceAndEarn":
-          navigation.navigate("RentParkSpace");
+          navigation.navigate("RentYourSpaceStack");
           break;
         case "Legal":
           navigation.navigate("Legal");
