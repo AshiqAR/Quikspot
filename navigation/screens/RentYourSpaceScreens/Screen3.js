@@ -125,6 +125,7 @@ export default function Screen3({navigation}) {
     // formData.append("estimatedCapacity", parkAreaDetails.estimatedCapacity);
 
     try {
+      console.log(parkAreaDetailsSend);
       const response = await axios.post(
         sendParkAreaVerificationURL,
         parkAreaDetailsSend

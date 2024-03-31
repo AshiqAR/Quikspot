@@ -6,18 +6,99 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
+  PermissionsAndroid,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import {useRentASpaceContext} from "../../context/RentASpaceContext";
+import Geolocation from "react-native-geolocation-service";
+import useLoadingWithinComponent from "../../customHooks/useLoadingWithinComponent";
+import LoadingModal from "../../components/LoadingModal";
+import CustomMap from "../../components/CustomMap";
 
 export default function Screen2({navigation}) {
   const {parkAreaDetails, updateParkAreaDetails} = useRentASpaceContext();
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
+  const [locationFetched, setLocationFetched] = useState(false);
+  const [mapRegion, setMapRegion] = useState({
+    latitude: currentLocation?.latitude || 8.543056,
+    longitude: currentLocation?.longitude || 76.905515,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0421,
+  });
+  const [showMap, setShowMap] = useState(true);
+  useEffect(() => {
+    if (currentLocation) {
+      setMapRegion({
+        latitude: currentLocation?.latitude || 8.543056,
+        longitude: currentLocation?.longitude || 76.905515,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+      setLocationFetched(true);
+    }
+  }, [currentLocation]);
+
+  const toggleMapVisibility = () => {
+    setShowMap(!showMap);
+  };
+
+  const requestLocationPermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: "Geolocation Permission",
+          message: "Can we access your location?",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK",
+        }
+      );
+      if (granted === "granted") {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (err) {
+      return false;
+    }
+  };
+
+  const getLocation = () => {
+    startLoading();
+    requestLocationPermission()
+      .then(res => {
+        if (res) {
+          Geolocation.getCurrentPosition(
+            position => {
+              const locationData = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              };
+              setCurrentLocation(locationData);
+              setLocationFetched(true);
+              updateParkAreaDetails.updateLocation(locationData);
+              stopLoading();
+            },
+            error => {
+              Alert.alert("Error", "Failed to fetch location");
+              stopLoading();
+            },
+            {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000}
+          );
+        } else {
+          stopLoading();
+        }
+      })
+      .catch(error => {
+        Alert.alert("Error", "Failed to fetch location");
+        stopLoading();
+      });
+  };
 
   const parkSpaceOptions = ["Home", "Outdoor", "Dedicated"];
-  const [currentLocation, setCurrentLocation] = useState({
-    latitude: 0,
-    longitude: 0,
-  });
+  const [currentLocation, setCurrentLocation] = useState(null);
 
   const handleNextPress = () => {
     // Convert input values to numbers for validation
@@ -44,7 +125,7 @@ export default function Screen2({navigation}) {
   };
 
   const handleLocationFetch = () => {
-    handleInputChange("location", currentLocation);
+    getLocation();
   };
 
   const handleToggleFacility = index => {
@@ -96,6 +177,12 @@ export default function Screen2({navigation}) {
 
   return (
     <View style={styles.container}>
+      {isLoading && (
+        <LoadingModal
+          isLoading={isLoading}
+          message="Fetching your location..."
+        />
+      )}
       <ScrollView style={styles.scrollSection}>
         <LabelInput
           label="Estimated Parking Capacity (No. of Cars)*"
@@ -126,6 +213,7 @@ export default function Screen2({navigation}) {
         >
           <Text style={styles.label}>Locate the parking area</Text>
         </View>
+
         <Pressable
           style={{
             flexDirection: "row",
@@ -142,6 +230,51 @@ export default function Screen2({navigation}) {
             Use Current Location
           </Text>
         </Pressable>
+        {locationFetched && currentLocation && (
+          <Text style={{marginLeft: 8, color: "green", fontStyle: "italic"}}>
+            Location fetched: Latitude: {currentLocation.latitude}, Longitude:{" "}
+            {currentLocation.longitude}
+          </Text>
+        )}
+
+        <Pressable
+          onPress={toggleMapVisibility}
+          style={{
+            marginTop: 10,
+            flex: 1,
+            justifyContent: "space-between",
+            flexDirection: "row",
+            paddingVertical: 10,
+            borderRadius: 5,
+            alignItems: "center",
+            backgroundColor: "#f9f9f9",
+          }}
+        >
+          <Text
+            style={{
+              color: "black",
+              fontSize: 15,
+              paddingHorizontal: 20,
+              fontWeight: "bold",
+            }}
+          >
+            {showMap ? "Hide Map" : "Show Map"}
+          </Text>
+          <Icon
+            name={showMap ? "chevron-down" : "chevron-forward"}
+            size={20}
+            color="black"
+          />
+        </Pressable>
+
+        {showMap && (
+          <View style={{height: 300, marginTop: 20, marginBottom: 30}}>
+            <CustomMap
+              initialRegion={mapRegion}
+              onLocationSelect={location => setCurrentLocation(location)}
+            />
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.nextButtonContainer}>

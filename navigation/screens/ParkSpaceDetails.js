@@ -63,7 +63,20 @@ export default function ParkSpaceDetails({navigation, route}) {
   }, [navigation, space.parkAreaName]);
 
   const renderFacility = ({item}) => (
-    <View style={styles.facilityContainer}>
+    <View
+      style={[
+        styles.facilityContainer,
+        {
+          flex: 1,
+          flexDirection: "row",
+          marginHorizontal: 5,
+          borderWidth: 1,
+          borderColor: "#4CAF50",
+          borderRadius: 5,
+          padding: 5,
+        },
+      ]}
+    >
       <Icon name="check" size={16} color="#4CAF50" />
       <Text style={styles.facilityText}>{item}</Text>
     </View>
@@ -105,9 +118,6 @@ export default function ParkSpaceDetails({navigation, route}) {
       {parkAreaDetails && (
         <>
           <View style={styles.detailCard}>
-            <Text style={styles.headerText}>
-              {parkAreaDetails.parkAreaName}
-            </Text>
             <Text style={styles.detailText}>
               {parkAreaDetails.address}, {parkAreaDetails.city},{" "}
               {parkAreaDetails.state}
@@ -131,13 +141,20 @@ export default function ParkSpaceDetails({navigation, route}) {
               />
             </View>
             <Text style={styles.rateAndRevenueText}>
-              Rate: ₹{parkAreaDetails.ratePerHour}/hr
+              Today's Rate Per Hour: ₹ {parkAreaDetails.ratePerHour}/hr
             </Text>
             <Text style={styles.rateAndRevenueText}>
               Today's Revenue: ₹{parkAreaDetails.revenue.todays}
             </Text>
           </View>
-
+          <Text
+            style={[
+              styles.detailText,
+              {fontSize: 17, marginVertical: 5, marginHorizontal: 10},
+            ]}
+          >
+            User Reviews
+          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -175,16 +192,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF", // Setting the background to white
   },
   detailCard: {
-    margin: 20,
-    padding: 20,
-    backgroundColor: "#F7F7F7", // Light gray card
+    margin: 10,
+    padding: 10,
+    backgroundColor: "#F7F7F7",
     borderRadius: 8,
-  },
-  headerText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 12,
   },
   detailText: {
     fontSize: 16,
@@ -202,16 +213,15 @@ const styles = StyleSheet.create({
     color: "#444",
   },
   facilitiesContainer: {
-    marginBottom: 20, // Increased spacing for visual separation
+    marginBottom: 20,
   },
   rateAndRevenueText: {
     fontSize: 16,
-    color: "#666",
+    color: "#333",
     marginBottom: 8,
   },
   reviewsContainer: {
-    paddingLeft: 20,
-    marginTop: 20,
+    paddingLeft: 10,
     marginBottom: 20,
   },
   reviewCard: {
@@ -252,6 +262,7 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   noBookings: {
+    marginBottom: 5,
     fontSize: 16,
     color: "#666",
   },

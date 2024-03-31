@@ -69,6 +69,13 @@ export const RentASpaceProvider = ({children}) => {
     }
   };
 
+  const updateLocation = location => {
+    setParkAreaDetails(prevDetails => ({
+      ...prevDetails,
+      location: location,
+    }));
+  };
+
   const addItemToArray = (arrayName, item) => {
     setParkAreaDetails(prevDetails => ({
       ...prevDetails,
@@ -76,7 +83,11 @@ export const RentASpaceProvider = ({children}) => {
     }));
   };
 
-  const updateParkAreaDetails = {updateDetails, resetUserDetails};
+  const updateParkAreaDetails = {
+    updateDetails,
+    resetUserDetails,
+    updateLocation,
+  };
 
   return (
     <RentASpaceContext.Provider
