@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {
   Alert,
   View,
@@ -20,7 +20,7 @@ const {addVehicleURL} = backendUrls;
 import {useAuth} from "../context/AuthContext";
 
 export default function AddNewVehicle({navigation}) {
-  const {user, setUser} = useAuth();
+  const {user, setVehicles, setUser} = useAuth();
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [selectedVehicleType, setSelectedVehicleType] = useState("- select -");
   const [make, setMake] = useState("");
@@ -48,13 +48,20 @@ export default function AddNewVehicle({navigation}) {
       })
       .then(response => {
         console.log(response.data);
-        Alert.alert("Vehicle Added", "Vehicle has been added successfully");
         setVehicleNumber("");
         setSelectedVehicleType("- select -");
         setMake("");
         setModel("");
         setUser(response.data.user);
-        navigation.navigate("MyVehicles");
+        setVehicles(response.data.user.vehicles);
+        Alert.alert("Success", "New Vehicle added successfully", [
+          {
+            text: "OK",
+            onPress: () => {
+              navigation.navigate("MyVehicles");
+            },
+          },
+        ]);
       })
       .catch(error => {
         console.log(error.response?.data || error);

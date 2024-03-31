@@ -4,6 +4,44 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({children}) => {
   const [user, setUser] = useState(null);
+  const [vehicles, setVehicles] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [activeParkings, setActiveParkings] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+
+  const getState = state => {
+    switch (state) {
+      case "vehicles":
+        return vehicles;
+      case "messages":
+        return messages;
+      case "activeParkings":
+        return activeParkings;
+      case "transactions":
+        return transactions;
+      default:
+        return null;
+    }
+  };
+
+  const setState = (state, data) => {
+    switch (state) {
+      case "vehicles":
+        setVehicles(data);
+        break;
+      case "messages":
+        setMessages(data);
+        break;
+      case "activeParkings":
+        setActiveParkings(data);
+        break;
+      case "transactions":
+        setTransactions(data);
+        break;
+      default:
+        break;
+    }
+  };
 
   const signIn = userData => {
     const updatedUserData = {
@@ -14,10 +52,22 @@ export const AuthProvider = ({children}) => {
 
   const signOut = () => {
     setUser(null);
+    setVehicles(null);
   };
 
   return (
-    <AuthContext.Provider value={{user, signIn, signOut, setUser}}>
+    <AuthContext.Provider
+      value={{
+        user,
+        signIn,
+        signOut,
+        setUser,
+        getState,
+        setState,
+        vehicles,
+        setVehicles,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

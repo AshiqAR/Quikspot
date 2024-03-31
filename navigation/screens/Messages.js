@@ -1,74 +1,114 @@
-import { View, Text, FlatList, StyleSheet } from 'react-native';
-import React from 'react';
-
-const messages = [
-  {
-    id: '1',
-    title: 'Booking Successful',
-    details: 'Your booking at Central Park is confirmed for 24th Mar.',
-    date: '2024-03-18',
-  },
-  {
-    id: '2',
-    title: 'Payment Received',
-    details: 'Payment of ₹500 received for parking at Downtown Parking Lot.',
-    date: '2024-03-17',
-  },
-];
+import {View, Text, FlatList, StyleSheet, Alert} from "react-native";
+import React, {useEffect, useState} from "react";
+import axios from "axios";
+import backendUrls from "../connections/backendUrls";
+const {getMyMessagesURL} = backendUrls;
+import {useAuth} from "../context/AuthContext";
+import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
+import LoadingModal from "../components/LoadingModal";
 
 export default function Messages() {
-  const renderMessageItem = ({ item }) => (
-    <View style={styles.messageCard}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.details}>{item.details}</Text>
-      <Text style={styles.date}>{item.date}</Text>
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
+  const {user, getState, setState} = useAuth();
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      startLoading();
+      try {
+        await axios
+          .post(getMyMessagesURL, {userId: user._id})
+          .then(response => {
+            setMessages(response.data.messages.reverse());
+          })
+          .catch(error => {
+            Alert.alert("Error", "An error occurred in fetching messages");
+          });
+      } catch (error) {
+        Alert.alert("Error", "An error occurred in fetching messages");
+      } finally {
+        stopLoading();
+      }
+    };
+    fetchMessages();
+  }, []);
+
+  const renderMessageItem = ({item}) => (
+    <View style={styles.messageItem}>
+      <View style={styles.messageBubble}>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.details}>{item.message}</Text>
+        <Text style={styles.date}>{new Date(item.time).toLocaleString()}</Text>
+      </View>
     </View>
   );
 
   return (
-    <FlatList
-      data={messages}
-      keyExtractor={item => item.id}
-      renderItem={renderMessageItem}
-      style={styles.container}
-      ListEmptyComponent={<Text style={styles.noMessages}>No messages to display</Text>}
-    />
+    <>
+      {isLoading && (
+        <LoadingModal
+          isLoading={isLoading}
+          message="Fetching your messages..."
+          activityIndicatorColor="black"
+        />
+      )}
+      <FlatList
+        data={messages}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={renderMessageItem}
+        style={styles.container}
+        ListEmptyComponent={
+          !isLoading && (
+            <Text style={styles.noMessages}>No messages to display</Text>
+          )
+        }
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-		marginVertical: 8,
-	},
-  messageCard: {
-    backgroundColor: 'white',
+    marginVertical: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  messageItem: {
+    flexDirection: "row", // Use 'row-reverse' for messages from the user
     marginVertical: 4,
-		marginHorizontal: 8,
-    padding: 20,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.23,
-    shadowRadius: 2.62,
-    elevation: 4,
+    marginHorizontal: 8,
+  },
+  messageBubble: {
+    backgroundColor: "#e5e5ea", // Differentiate sender and receiver with colors
+    borderRadius: 20,
+    padding: 10,
+    maxWidth: "80%",
+    alignSelf: "flex-start", // Use 'flex-end' for messages from the user
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000",
   },
   details: {
     fontSize: 14,
-    marginBottom: 5,
+    marginTop: 4,
+    color: "#000",
   },
   date: {
     fontSize: 12,
-    color: '#777',
+    color: "#777",
+    marginTop: 4,
+    alignSelf: "flex-end",
   },
   noMessages: {
     fontSize: 16,
-    color: '#777',
-    textAlign: 'center',
+    color: "#777",
+    textAlign: "center",
     marginTop: 20,
   },
 });

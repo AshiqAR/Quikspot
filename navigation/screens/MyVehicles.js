@@ -6,9 +6,15 @@ import {
   TouchableOpacity,
   Pressable,
 } from "react-native";
-import React from "react";
+import React, {useEffect, useState} from "react";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import {useAuth} from "../context/AuthContext";
+import backendUrls from "../connections/backendUrls";
+import axios from "axios";
+import LoadingModal from "../components/LoadingModal";
+import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
+
+const {getMyVehiclesURL} = backendUrls;
 
 const titleCase = str => {
   if (!str) return "";
@@ -16,8 +22,35 @@ const titleCase = str => {
 };
 
 export default function MyVehicles({navigation}) {
-  const {user} = useAuth();
-  const vehicles = user.vehicles;
+  // Use vehicles directly from context instead of local state
+  const {user, vehicles, setVehicles} = useAuth();
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
+  const fetchVehicles = async () => {
+    if (!user || !user._id) return;
+    startLoading();
+    try {
+      const response = await axios.post(getMyVehiclesURL, {userId: user._id});
+      if (response.data.success) {
+        setVehicles(response.data.vehicles);
+      } else {
+        Alert.alert("Error", response.data.message);
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", "An error occurred. Please try again later.");
+    } finally {
+      stopLoading();
+    }
+  };
+
+  useEffect(() => {
+    if (vehicles == null) {
+      console.log("Fetching vehicles");
+      fetchVehicles();
+    }
+  }, []);
+
   const handleDelete = id => {
     console.log("Deleting vehicle with ID:", id);
   };
@@ -38,7 +71,7 @@ export default function MyVehicles({navigation}) {
         <Text style={styles.type}>{titleCase(item.type)}</Text>
       </View>
       <TouchableOpacity
-        onPress={() => handleDelete(item.id)}
+        onPress={() => handleDelete(item._id)}
         style={styles.deleteButton}
       >
         <Icon name="trash" size={20} color="black" />
@@ -48,15 +81,24 @@ export default function MyVehicles({navigation}) {
 
   return (
     <View style={{flex: 1}}>
+      {isLoading && (
+        <LoadingModal
+          isLoading={isLoading}
+          activityIndicatorColor="black"
+          message="Loading Your Vehicles..."
+        />
+      )}
       <FlatList
-        data={vehicles}
+        data={vehicles === null ? [] : vehicles}
         renderItem={renderItem}
         keyExtractor={item => item._id}
         style={styles.container}
         ListEmptyComponent={
-          <Text style={styles.emptyList}>
-            You have not added any vehicles yet !
-          </Text>
+          !isLoading && (
+            <Text style={styles.emptyList}>
+              You have not added any vehicles yet !
+            </Text>
+          )
         }
       />
       <View
@@ -96,7 +138,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    marginVertical: 10,
+    marginBottom: 20,
   },
   card: {
     flexDirection: "row",

@@ -61,7 +61,7 @@ export default function Account({navigation}) {
 
   const [handleClose, isLoading] = useCloseWithIndicator(async () => {
     await waitForRandomTime(2000);
-    navigation.navigate("Home");
+    navigation.navigate("HomeNavigatorStack");
   });
   useEffect(() => {
     if (isLoading) {

@@ -1,11 +1,38 @@
-import React from "react";
+import React, {useState, useEffect} from "react";
 import {View, Text, FlatList, StyleSheet, Platform} from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import {useAuth} from "../context/AuthContext";
+import axios from "axios";
+import backendUrls from "../connections/backendUrls";
+const {getMyTransactionsURL} = backendUrls;
+import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
+import LoadingModal from "../components/LoadingModal";
 
 export default function TransactionsScreen() {
   const {user} = useAuth();
-  const transactions = user.walletTransactions.reverse();
+  const [transactions, setTransactions] = useState([]);
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      startLoading();
+      try {
+        await axios
+          .post(getMyTransactionsURL, {userId: user._id})
+          .then(response => {
+            setTransactions(response.data.transactions.reverse());
+          })
+          .catch(error => {
+            Alert.alert("Error", "An error occurred in fetching transactions");
+          });
+      } catch (error) {
+        Alert.alert("Error", "An error occurred in fetching transactions");
+      } finally {
+        stopLoading();
+      }
+    };
+    fetchTransactions();
+  }, []);
 
   const renderItem = ({item}) => {
     const transactionDate = new Date(item.time);
@@ -52,15 +79,25 @@ export default function TransactionsScreen() {
   };
 
   return (
-    <FlatList
-      data={transactions}
-      renderItem={renderItem}
-      keyExtractor={item => item._id}
-      style={styles.container}
-      ListEmptyComponent={
-        <Text style={styles.emptyList}>No transactions to display</Text>
-      }
-    />
+    <>
+      {isLoading && (
+        <LoadingModal
+          message="Fetching your transactions..."
+          isLoading={isLoading}
+        />
+      )}
+      <FlatList
+        data={transactions}
+        renderItem={renderItem}
+        keyExtractor={item => item._id}
+        style={styles.container}
+        ListEmptyComponent={
+          !isLoading && (
+            <Text style={styles.emptyList}>No transactions to display</Text>
+          )
+        }
+      />
+    </>
   );
 }
 
