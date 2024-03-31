@@ -1,14 +1,23 @@
-import React, {createContext, useContext, useEffect, useState} from "react";
-import {PermissionsAndroid, Linking} from "react-native";
-import {check, request, PERMISSIONS, RESULTS} from "react-native-permissions";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import {PermissionsAndroid, Linking, Alert} from "react-native";
 import {getDistanceFromLatLonInKm} from "../utilities/utils";
 import Geolocation from "react-native-geolocation-service";
-import parkAreas from "../utilities/parkAreas";
 import useCloseWithIndicator from "../customHooks/useCloseWithIndicator";
+import axios from "axios";
+import backendUrls from "../connections/backendUrls";
+const {getAllParkAreasURL} = backendUrls;
+import {isEqual} from "lodash";
 
 const ParkingContext = createContext();
 
 export const ParkingDataProvider = ({children}) => {
+  const [parkAreas, setParkAreas] = useState([]);
   const [locationSharingEnabled, setLocationSharingEnabled] = useState(false);
   const [location, setLocation] = useState(null); // users location
   const [bookingDetails, setBookingDetails] = useState({}); // {parkSpaceId, vehicleId, startTime, endTime
@@ -16,20 +25,37 @@ export const ParkingDataProvider = ({children}) => {
   const [suggestedParkAreas, setSuggestedParkAreas] = useState([]);
   const [selectedParkArea, setSelectedParkArea] = useState(null);
 
+  const fetchAllParkAreas = useCallback(async () => {
+    try {
+      const response = await axios.get(getAllParkAreasURL);
+      if (response.data.success) {
+        // Perform deep comparison
+        if (!isEqual(response.data.parkAreas, parkAreas)) {
+          setParkAreas(response.data.parkAreas);
+          console.log("Park Areas updated: ", response.data.parkAreas);
+        } else {
+          console.log("No changes in Park Areas");
+        }
+      } else {
+        Alert.alert("Error", "Failed to fetch park areas");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Failed to fetch park areas");
+    }
+  }, [parkAreas]);
+
   const updateSelectedParkArea = parkArea => {
     setSelectedParkArea(parkArea);
   };
   const resetSelectedParkArea = () => {
     setSelectedParkArea(null);
   };
-
   const resetSuggestedParkAreas = () => {
     setSuggestedParkAreas([]);
   };
 
   const [fetchSuggestedParkAreas, isLoading] = useCloseWithIndicator(
     async () => {
-      // Simulate fetching suggested park areas with a 4-second delay
       await new Promise(resolve => setTimeout(resolve, 3000));
       setSuggestedParkAreas(
         getParkAreasWithinDistance(
@@ -120,8 +146,8 @@ export const ParkingDataProvider = ({children}) => {
       const distance = getDistanceFromLatLonInKm(
         latitude,
         longitude,
-        parkArea.coords.latitude,
-        parkArea.coords.longitude
+        parkArea.location.latitude,
+        parkArea.location.longitude
       );
       return distance <= dist;
     });
@@ -146,6 +172,7 @@ export const ParkingDataProvider = ({children}) => {
         isLoading,
         updateSelectedParkArea,
         resetSelectedParkArea,
+        fetchAllParkAreas,
       }}
     >
       {children}

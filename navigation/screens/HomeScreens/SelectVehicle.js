@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {
   View,
   Text,
@@ -6,38 +6,49 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import {useParkingDetails} from "../../context/ParkingContext";
-
-const vehicles = [
-  {
-    id: "1",
-    vehicleNumber: "KL 21 R 4040",
-    type: "Car",
-    make: "Maruti Suzuki",
-    model: "Swift",
-  },
-  {
-    id: "2",
-    vehicleNumber: "KL 01 A 1234",
-    type: "Car",
-    make: "Toyota",
-    model: "Corolla",
-  },
-  {
-    id: "3",
-    vehicleNumber: "KL 01 A 1",
-    type: "Motorcycle",
-    make: "Honda",
-    model: "CBR500R",
-  },
-];
+import {useAuth} from "../../context/AuthContext";
+import axios from "axios";
+import backendUrls from "../../connections/backendUrls";
+const {getMyVehiclesURL} = backendUrls;
+import useLoadingWithinComponent from "../../customHooks/useLoadingWithinComponent";
+import LoadingModal from "../../components/LoadingModal";
 
 export default function MyVehicles({navigation}) {
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
+  const {vehicles, user, setVehicles} = useAuth();
   const {locationSharingEnabled, getLocation, updateBookingDetails} =
     useParkingDetails();
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
+
+  const fetchVehicles = async () => {
+    if (!user || !user._id) return;
+    startLoading();
+    try {
+      const response = await axios.post(getMyVehiclesURL, {userId: user._id});
+      if (response.data.success) {
+        setVehicles(response.data.vehicles);
+      } else {
+        Alert.alert("Error", response.data.message);
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", "An error occurred. Please try again later.");
+    } finally {
+      stopLoading();
+    }
+  };
+
+  useEffect(() => {
+    if (vehicles == null) {
+      console.log("Fetching vehicles");
+      fetchVehicles();
+    }
+  }, []);
 
   const toggleSelection = id => {
     setSelectedVehicleId(prevId => (prevId === id ? null : id));
@@ -46,12 +57,12 @@ export default function MyVehicles({navigation}) {
   const handleProceedForSearch = () => {
     if (!isProceedButtonDisabled) {
       const selectedVehicle = vehicles.find(
-        vehicle => vehicle.id === selectedVehicleId
+        vehicle => vehicle._id === selectedVehicleId
       );
       if (selectedVehicle) {
         updateBookingDetails({
           vehicle: {
-            vehicleId: selectedVehicle.id,
+            vehicleId: selectedVehicle._id,
             vehicleNumber: selectedVehicle.vehicleNumber,
             type: selectedVehicle.type,
             make: selectedVehicle.make,
@@ -64,17 +75,17 @@ export default function MyVehicles({navigation}) {
   };
 
   const renderItem = ({item}) => {
-    const isSelected = selectedVehicleId === item.id;
+    const isSelected = selectedVehicleId === item._id;
 
     return (
       <TouchableOpacity
         style={[styles.card, isSelected && styles.selectedCard]}
-        onPress={() => toggleSelection(item.id)}
+        onPress={() => toggleSelection(item._id)}
       >
         <Icon
-          name={item.type === "Car" ? "car" : "motorcycle"}
+          name={item.type === "car" ? "car" : "motorcycle"}
           size={25}
-          color={item.type === "Car" ? "#4CAF50" : "#FFC107"}
+          color={item.type === "car" ? "#4CAF50" : "#FFC107"}
           style={styles.icon}
         />
         <View style={styles.details}>
@@ -92,6 +103,12 @@ export default function MyVehicles({navigation}) {
 
   return (
     <View style={{flex: 1}}>
+      {isLoading && (
+        <LoadingModal
+          message="Fething your vehicles..."
+          isLoading={isLoading}
+        />
+      )}
       {!locationSharingEnabled && (
         <Pressable
           style={{
@@ -112,10 +129,10 @@ export default function MyVehicles({navigation}) {
       <FlatList
         data={vehicles}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item._id}
         style={styles.container}
         ListEmptyComponent={
-          <Text style={styles.emptyList}>No vehicles added!</Text>
+          !isLoading && <Text style={styles.emptyList}>No vehicles added!</Text>
         }
       />
       <View

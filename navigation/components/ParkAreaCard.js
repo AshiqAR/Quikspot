@@ -25,21 +25,21 @@ const ParkAreaCard = ({parkArea, onPress}) => {
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.header}>
-        <Text style={styles.title}>{parkArea.name}</Text>
+        <Text style={styles.title}>{parkArea.parkAreaName}</Text>
         <View style={styles.rateContainer}>
           <Text style={styles.rupeeSymbol}>{"\u20B9"}</Text>
-          <Text style={styles.rateText}>{parkArea.price_per_hr}/hr</Text>
+          <Text style={styles.rateText}>{parkArea.ratePerHour}/hr</Text>
         </View>
       </View>
       <Text style={styles.subtitle}>
-        {parkArea.place} - {parkArea.distance}km
+        {parkArea.address} - {parkArea.distance}dist km
       </Text>
 
       <View style={styles.infoContainer}>
         <View style={styles.rateAndSlots}>
           <View style={styles.slotsContainer}>
             <Text style={styles.slotsText}>
-              Free slots: {parkArea.no_free_slots}
+              Free slots: {parkArea.availableSlots}
             </Text>
           </View>
         </View>
@@ -47,17 +47,19 @@ const ParkAreaCard = ({parkArea, onPress}) => {
         <View style={styles.ratingContainer}>
           <Icon
             name="star"
-            color={getRatingColor(parseFloat(parkArea.average_rating))}
+            // color={getRatingColor(parseFloat(parkArea.rating))}
+            color="gold"
             size={18}
           />
           <Text style={styles.ratingText}>
-            {parkArea.average_rating} ({parkArea.total_reviews})
+            {parkArea.rating.totalRating} (
+            {parkArea.rating.totalNumberOfRatings})
           </Text>
         </View>
       </View>
 
       <View style={styles.featuresContainer}>
-        {parkArea.exclusive_features.map((feature, index) => (
+        {parkArea.facilitiesAvailable.map((feature, index) => (
           <View key={index} style={styles.feature}>
             <Text style={styles.featureText}>{feature}</Text>
           </View>

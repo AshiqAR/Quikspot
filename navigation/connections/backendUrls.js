@@ -15,6 +15,8 @@ const backendUrls = {
   getMyVehiclesURL: `${BACKEND_URL}/api/user/myVehicles`,
   getMyParkSpacesURL: `${BACKEND_URL}/api/user/myParkAreas`,
   getParkAreaDetailsURL: `${BACKEND_URL}/api/user/getParkAreaDetails`,
+  getAllParkAreasURL: `${BACKEND_URL}/api/parkArea/getAllParkAreas`,
+  parkAreaDetailsForBookingURL: `${BACKEND_URL}/api/parkArea/booking/getParkAreaDetails`,
 };
 
 export default backendUrls;

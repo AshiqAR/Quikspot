@@ -9,6 +9,7 @@ import {
   ScrollView,
   Modal,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 
 import MapView, {Marker, PROVIDER_GOOGLE, Callout} from "react-native-maps";
@@ -47,7 +48,25 @@ export default function MapScreen({navigation}) {
     resetSuggestedParkAreas,
     updateBookingDetails,
     isLoading,
+    fetchAllParkAreas,
   } = useParkingDetails();
+
+  // for fetching and updating parkAreas
+  const fetchIntervalRef = useRef(null);
+  useEffect(() => {
+    const startFetchingParkAreas = () => {
+      fetchAllParkAreas();
+      fetchIntervalRef.current = setInterval(fetchAllParkAreas, 1000000);
+    };
+
+    startFetchingParkAreas();
+    return () => {
+      if (fetchIntervalRef.current) {
+        clearInterval(fetchIntervalRef.current);
+      }
+    };
+  }, []);
+
   const [mapRegion, setMapRegion] = useState({
     latitude: 8.545785,
     longitude: 76.904143,
@@ -83,8 +102,8 @@ export default function MapScreen({navigation}) {
     if (suggestedParkAreas.length > 0 && suggestedParkAreas) {
       setCamera({
         center: {
-          latitude: suggestedParkAreas[currentIndex].coords.latitude,
-          longitude: suggestedParkAreas[currentIndex].coords.longitude,
+          latitude: suggestedParkAreas[currentIndex].location.latitude,
+          longitude: suggestedParkAreas[currentIndex].location.longitude,
         },
         pitch: 2,
         heading: 20,
@@ -138,10 +157,10 @@ export default function MapScreen({navigation}) {
       .map((park, index) => ({...park, originalIndex: index}))
       .filter(park => {
         return (
-          park.coords.latitude < north &&
-          park.coords.latitude > south &&
-          park.coords.longitude < east &&
-          park.coords.longitude > west
+          park.location.latitude < north &&
+          park.location.latitude > south &&
+          park.location.longitude < east &&
+          park.location.longitude > west
         );
       });
 
@@ -200,8 +219,15 @@ export default function MapScreen({navigation}) {
 
   const renderParkAreas = () => {
     const initiateBooking = parkArea => {
-      updateBookingDetails({parkArea});
-      navigation.navigate("BookingScreen");
+      if (parkArea.availableSlots === 0) {
+        Alert.alert(
+          "No slots available",
+          "Please look for another parking area."
+        );
+      } else {
+        updateBookingDetails({parkArea});
+        navigation.navigate("BookingScreen", {parkAreaId: parkArea._id});
+      }
     };
 
     return (
@@ -369,8 +395,8 @@ export default function MapScreen({navigation}) {
               <ImageMarker
                 key={index}
                 point={{
-                  latitude: park.coords.latitude,
-                  longitude: park.coords.longitude,
+                  latitude: park.location.latitude,
+                  longitude: park.location.longitude,
                 }}
                 title={park.name}
                 description={`free slots: ${park.no_free_slots}`}
@@ -385,8 +411,8 @@ export default function MapScreen({navigation}) {
               <ImageMarker
                 key={index}
                 point={{
-                  latitude: park.coords.latitude,
-                  longitude: park.coords.longitude,
+                  latitude: park.location.latitude,
+                  longitude: park.location.longitude,
                 }}
                 title={park.name}
                 description={`free slots: ${park.no_free_slots}`}
