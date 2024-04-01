@@ -11,6 +11,9 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import {useParkingDetails} from "../../context/ParkingContext";
+import backendUrls from "../../connections/backendUrls";
+const {parkAreaDetailsForBookingURL} = backendUrls;
+import axios from "axios";
 
 // Sample user reviews data
 const userReviews = [
@@ -19,11 +22,34 @@ const userReviews = [
   {username: "Sam", review: "Secure and well-maintained area."},
 ];
 
-const BookingScreen = ({navigation}) => {
+const BookingScreen = ({navigation, route}) => {
+  const {parkAreaId} = route.params;
   const {bookingDetails} = useParkingDetails();
   const [modalVisible, setModalVisible] = useState(false);
   const {vehicle, parkArea} = bookingDetails;
   const [transactionScreen, setTransactionScreen] = useState(false);
+  const [parkAreaDetails, setParkAreaDetails] = useState(null);
+
+  const fetchParkAreaDetailsForBooking = async () => {
+    try {
+      const response = await axios.post(parkAreaDetailsForBookingURL, {
+        parkAreaId,
+      });
+      if (response.data.success) {
+        console.log(response.data.parkAreaDetails);
+        setParkAreaDetails(response.data.parkAreaDetails);
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "An error occurred while fetching park area details. Please try again later."
+      );
+    }
+  };
+
+  useEffect(() => {
+    fetchParkAreaDetailsForBooking();
+  }, []);
 
   useEffect(() => {
     if (modalVisible) {
@@ -76,7 +102,7 @@ const BookingScreen = ({navigation}) => {
   const renderReviews = reviews => {
     return reviews.map((review, index) => (
       <View key={index} style={styles.review}>
-        <Text style={styles.username}>{review.username}</Text>
+        <Text style={styles.username}>{review.userName}</Text>
         <Text style={styles.userReview}>{review.review}</Text>
       </View>
     ));
@@ -84,35 +110,42 @@ const BookingScreen = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <Text style={styles.title}>{parkArea.name}</Text>
+      {parkAreaDetails && (
+        <ScrollView style={styles.scrollView}>
+          <Text style={styles.title}>{parkAreaDetails.parkAreaName}</Text>
 
-        <Text style={styles.subtitle}>{parkArea.place}</Text>
-
-        <Text style={styles.pricePerHour}>₹{parkArea.price_per_hr} / hour</Text>
-
-        <View style={styles.ratingContainer}>
-          <Icon name="star" size={24} color="#FFD700" />
-          <Text style={styles.ratingText}>
-            {parkArea.average_rating} ({parkArea.total_reviews} Reviews)
+          <Text style={styles.subtitle}>
+            {parkAreaDetails.address}, {parkAreaDetails.city},{" "}
+            {parkAreaDetails.state}, {parkAreaDetails.pincode}
           </Text>
-        </View>
 
-        <Text style={styles.sectionTitle}>Your Booking Details</Text>
-        <View style={styles.bookingDetailsContainer}>
-          <Text style={styles.bookingDetailText}>
-            Vehicle: {vehicle.model} ({vehicle.vehicleNumber})
+          <Text style={styles.pricePerHour}>
+            ₹{parkArea.ratePerHour} / hour
           </Text>
-        </View>
 
-        <Text style={styles.sectionTitle}>Facilities Available</Text>
-        <View style={styles.featuresWrapper}>
-          {renderFeatures(parkArea.exclusive_features)}
-        </View>
+          <View style={styles.ratingContainer}>
+            <Icon name="star" size={24} color="#FFD700" />
+            <Text style={styles.ratingText}>
+              {parkArea.average_rating} ({parkArea.total_reviews} Reviews)
+            </Text>
+          </View>
 
-        <Text style={styles.sectionTitle}>User Reviews</Text>
-        {renderReviews(userReviews)}
-      </ScrollView>
+          <Text style={styles.sectionTitle}>Your Booking Details</Text>
+          <View style={styles.bookingDetailsContainer}>
+            <Text style={styles.bookingDetailText}>
+              Vehicle: {vehicle.model} ({vehicle.vehicleNumber})
+            </Text>
+          </View>
+
+          <Text style={styles.sectionTitle}>Facilities Available</Text>
+          <View style={styles.featuresWrapper}>
+            {renderFeatures(parkAreaDetails.facilitiesAvailable)}
+          </View>
+
+          <Text style={styles.sectionTitle}>User Reviews</Text>
+          {renderReviews(parkAreaDetails.reviews)}
+        </ScrollView>
+      )}
       {!modalVisible && !transactionScreen && (
         <Pressable style={styles.button} onPress={handleBookNowPress}>
           <Text style={styles.buttonText}>Book Now</Text>
