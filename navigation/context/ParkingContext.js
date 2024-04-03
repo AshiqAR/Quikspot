@@ -77,12 +77,6 @@ export const ParkingDataProvider = ({children}) => {
     performAsyncFetch();
   }, [searchLocation]);
 
-  const NavigateToParkArea = (latitude, longitude) => {
-    Linking.openURL(
-      `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving&dir_action=navigate`
-    );
-  };
-
   const updateBookingDetails = details => {
     setBookingDetails(prevDetails => ({
       ...prevDetails,
@@ -162,7 +156,6 @@ export const ParkingDataProvider = ({children}) => {
         bookingDetails,
         updateBookingDetails,
         parkAreas,
-        NavigateToParkArea,
         searchLocation,
         setSearchLocation,
         suggestedParkAreas,

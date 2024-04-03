@@ -54,7 +54,11 @@ export default function TabNavigationContainer() {
           tabBarLabel: "Home",
         }}
       />
-      <Tab.Screen name={activityName} component={Activity} />
+      <Tab.Screen
+        name={activityName}
+        component={Activity}
+        options={{headerShown: false, tabBarLabel: "Activity"}}
+      />
 
       <Tab.Screen
         name={accountName}

@@ -5,8 +5,8 @@ const AuthContext = createContext();
 export const AuthProvider = ({children}) => {
   const [user, setUser] = useState(null);
   const [vehicles, setVehicles] = useState(null);
+  const [activeBookings, setActiveBookings] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [activeParkings, setActiveParkings] = useState([]);
   const [transactions, setTransactions] = useState([]);
 
   const getState = state => {
@@ -15,8 +15,6 @@ export const AuthProvider = ({children}) => {
         return vehicles;
       case "messages":
         return messages;
-      case "activeParkings":
-        return activeParkings;
       case "transactions":
         return transactions;
       default:
@@ -32,8 +30,8 @@ export const AuthProvider = ({children}) => {
       case "messages":
         setMessages(data);
         break;
-      case "activeParkings":
-        setActiveParkings(data);
+      case "activeBookings":
+        setActiveBookings(data);
         break;
       case "transactions":
         setTransactions(data);
@@ -66,6 +64,8 @@ export const AuthProvider = ({children}) => {
         setState,
         vehicles,
         setVehicles,
+        activeBookings,
+        setActiveBookings,
       }}
     >
       {children}
