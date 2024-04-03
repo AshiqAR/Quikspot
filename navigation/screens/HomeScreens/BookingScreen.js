@@ -7,44 +7,55 @@ import {
   Pressable,
   ScrollView,
   StatusBar,
+  FlatList,
   Alert,
+  Dimensions,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import {useParkingDetails} from "../../context/ParkingContext";
 import backendUrls from "../../connections/backendUrls";
 const {parkAreaDetailsForBookingURL} = backendUrls;
 import axios from "axios";
+import useLoadingWithinComponent from "../../customHooks/useLoadingWithinComponent";
+import LoadingModal from "../../components/LoadingModal";
 
-// Sample user reviews data
-const userReviews = [
-  {username: "Alex", review: "Great location and affordable prices!"},
-  {username: "Jordan", review: "Easy to access and plenty of spaces."},
-  {username: "Sam", review: "Secure and well-maintained area."},
-];
+const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
+  if (!totalRating || !totalNumberOfRatings || totalNumberOfRatings === 0) {
+    return "Rating not available";
+  }
+  const averageRating = totalRating / totalNumberOfRatings;
+  return `${Math.round(averageRating * 100) / 100} (${totalNumberOfRatings})`;
+};
+
+const screenWidth = Dimensions.get("window").width;
+const CARD_WIDTH = screenWidth * 0.8;
+const CARD_MARGIN = 15;
 
 const BookingScreen = ({navigation, route}) => {
   const {parkAreaId} = route.params;
   const {bookingDetails} = useParkingDetails();
   const [modalVisible, setModalVisible] = useState(false);
-  const {vehicle, parkArea} = bookingDetails;
-  const [transactionScreen, setTransactionScreen] = useState(false);
   const [parkAreaDetails, setParkAreaDetails] = useState(null);
+  const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
 
   const fetchParkAreaDetailsForBooking = async () => {
+    startLoading();
     try {
       const response = await axios.post(parkAreaDetailsForBookingURL, {
         parkAreaId,
       });
       if (response.data.success) {
-        console.log(response.data.parkAreaDetails);
         setParkAreaDetails(response.data.parkAreaDetails);
+        stopLoading();
       }
     } catch (error) {
       Alert.alert(
         "Error",
         "An error occurred while fetching park area details. Please try again later."
       );
+      stopLoading();
     }
+    stopLoading();
   };
 
   useEffect(() => {
@@ -53,104 +64,115 @@ const BookingScreen = ({navigation, route}) => {
 
   useEffect(() => {
     if (modalVisible) {
-      StatusBar.setBackgroundColor("rgba(0, 0, 0, 0.5)");
+      StatusBar.setBackgroundColor("rgba(0,0,0,0.5)");
     } else {
-      StatusBar.setBackgroundColor("white");
+      StatusBar.setBackgroundColor("#FFF");
     }
   }, [modalVisible]);
 
   const handleBookNowPress = () => {
     setModalVisible(true);
-    setTransactionScreen(false);
-  };
-
-  const handleGotItPress = () => {
-    setTransactionScreen(true);
-
-    // Set a timeout to navigate after 2 seconds
-    setTimeout(() => {
-      // Ensure to close the modal before navigating
-      setModalVisible(false);
-
-      // Navigate to the Activity Screen
-      navigation.navigate("Activity");
-
-      // Optionally, reset the transaction screen state if you're going to come back to this screen
-      setTransactionScreen(false);
-    }, 2000); // 2000 milliseconds = 2 seconds
   };
 
   const handleCloseModal = () => {
     setModalVisible(false);
-    setTransactionScreen(false); // Reset the modal state for future bookings
   };
 
-  const renderFeatures = features => {
-    return features.map((feature, index) => (
-      <View key={index} style={styles.featureContainer}>
-        <Icon
-          name="check"
-          size={20}
-          color="#4CAF50"
-          style={styles.featureIcon}
-        />
-        <Text style={styles.featureText}>{feature}</Text>
-      </View>
-    ));
-  };
+  const renderFeatures = ({item}) => (
+    <View style={styles.facilityContainer}>
+      <Icon name="check" size={16} color="#4CAF50" />
+      <Text style={styles.facilityText}>{item}</Text>
+    </View>
+  );
 
-  const renderReviews = reviews => {
-    return reviews.map((review, index) => (
-      <View key={index} style={styles.review}>
-        <Text style={styles.username}>{review.userName}</Text>
-        <Text style={styles.userReview}>{review.review}</Text>
-      </View>
-    ));
-  };
+  const renderReview = ({item}) => (
+    <View style={styles.reviewCard}>
+      <Text style={styles.reviewText}>{item.review}</Text>
+      <Text style={styles.reviewerName}>- {item.userName}</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
+      {isLoading && (
+        <LoadingModal
+          isLoading={isLoading}
+          message="Fetching the booking details..."
+          activityIndicatorColor="#4CAF50"
+        />
+      )}
       {parkAreaDetails && (
-        <ScrollView style={styles.scrollView}>
-          <Text style={styles.title}>{parkAreaDetails.parkAreaName}</Text>
-
-          <Text style={styles.subtitle}>
-            {parkAreaDetails.address}, {parkAreaDetails.city},{" "}
-            {parkAreaDetails.state}, {parkAreaDetails.pincode}
-          </Text>
-
-          <Text style={styles.pricePerHour}>
-            ₹{parkArea.ratePerHour} / hour
-          </Text>
-
-          <View style={styles.ratingContainer}>
-            <Icon name="star" size={24} color="#FFD700" />
-            <Text style={styles.ratingText}>
-              {parkArea.average_rating} ({parkArea.total_reviews} Reviews)
-            </Text>
+        <View style={{flex: 1, justifyContent: "space-between"}}>
+          <ScrollView style={styles.scrollView}>
+            <View style={styles.detailCard}>
+              <Text style={styles.parkAreaName}>
+                {parkAreaDetails.parkAreaName}
+              </Text>
+              <Text style={styles.detailText}>
+                {parkAreaDetails.address}, {parkAreaDetails.city},{" "}
+                {parkAreaDetails.state}
+              </Text>
+              <Text style={styles.detailText}>
+                Park Area Type: {parkAreaDetails.parkAreaType}
+              </Text>
+              <Text style={styles.rateText}>
+                Price: {"\u20B9"} {parkAreaDetails.ratePerHour}/hr
+              </Text>
+              <View style={styles.ratingContainer}>
+                <Icon name="star" size={20} color="#FFD700" />
+                <Text style={styles.ratingText}>
+                  {getFormattedAverageRating(
+                    parkAreaDetails.rating.totalRating,
+                    parkAreaDetails.rating.totalNumberOfRatings
+                  )}
+                </Text>
+              </View>
+              <View style={styles.facilitiesContainer}>
+                <FlatList
+                  horizontal
+                  data={parkAreaDetails.facilitiesAvailable}
+                  renderItem={renderFeatures}
+                  keyExtractor={(item, index) => index.toString()}
+                  showsHorizontalScrollIndicator={false}
+                />
+              </View>
+            </View>
+            <View style={styles.detailCard}>
+              <Text style={styles.parkAreaName}>Vehicle Details</Text>
+              <Text>
+                Vehicle Number: {bookingDetails.vehicle.vehicleNumber}
+              </Text>
+              <Text>
+                Make and Model: {bookingDetails.vehicle.make}{" "}
+                {bookingDetails.vehicle.model}
+              </Text>
+              <Text>Vehicle Type: {bookingDetails.vehicle.type}</Text>
+            </View>
+            <Text style={styles.userReviewsTitle}>User Reviews</Text>
+            <FlatList
+              data={parkAreaDetails.reviews}
+              renderItem={renderReview}
+              keyExtractor={(item, index) => index.toString()}
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={CARD_WIDTH + CARD_MARGIN * 2}
+              decelerationRate="fast"
+              contentContainerStyle={styles.reviewsContainer}
+              ListEmptyComponent={
+                <Text style={{marginLeft: 15, color: "#666"}}>
+                  No reviews available
+                </Text>
+              }
+            />
+          </ScrollView>
+          <View style={styles.buttonContainer}>
+            <Pressable style={styles.button} onPress={handleBookNowPress}>
+              <Text style={styles.buttonText}>Book Now</Text>
+            </Pressable>
           </View>
-
-          <Text style={styles.sectionTitle}>Your Booking Details</Text>
-          <View style={styles.bookingDetailsContainer}>
-            <Text style={styles.bookingDetailText}>
-              Vehicle: {vehicle.model} ({vehicle.vehicleNumber})
-            </Text>
-          </View>
-
-          <Text style={styles.sectionTitle}>Facilities Available</Text>
-          <View style={styles.featuresWrapper}>
-            {renderFeatures(parkAreaDetails.facilitiesAvailable)}
-          </View>
-
-          <Text style={styles.sectionTitle}>User Reviews</Text>
-          {renderReviews(parkAreaDetails.reviews)}
-        </ScrollView>
+        </View>
       )}
-      {!modalVisible && !transactionScreen && (
-        <Pressable style={styles.button} onPress={handleBookNowPress}>
-          <Text style={styles.buttonText}>Book Now</Text>
-        </Pressable>
-      )}
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -160,50 +182,35 @@ const BookingScreen = ({navigation, route}) => {
         <View style={styles.modalOverlay}>
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
-              <Pressable style={styles.closeIcon} onPress={handleCloseModal}>
-                <Icon name="close" size={24} color="black" />
+              <Pressable style={styles.closeButton} onPress={handleCloseModal}>
+                <Icon name="close" size={24} color="#000" />
               </Pressable>
+              <Text style={styles.modalTitle}>Booking Information</Text>
+              <Text style={styles.modalText}>• Valid for 30 minutes.</Text>
+              <Text style={styles.modalText}>
+                • Reach on time to avoid cancellation.
+              </Text>
+              <Text style={styles.modalText}>
+                • An hour's parking fee will be pre-deducted.
+              </Text>
 
-              {!transactionScreen ? (
-                <>
-                  <Text style={styles.modalHeaderText}>
-                    Booking Information
-                  </Text>
-                  <View style={styles.modalContent}>
-                    <Text style={styles.modalText}>
-                      • Valid for 30 minutes.
-                    </Text>
-                    <Text style={styles.modalText}>
-                      • Reach on time to avoid cancellation.
-                    </Text>
-                    <Text style={styles.modalText}>
-                      • An hour's parking fee will be pre-deducted.
-                    </Text>
-                  </View>
-                  <Pressable
-                    style={[styles.button, styles.buttonClose]}
-                    onPress={handleGotItPress}
-                  >
-                    <Text style={styles.textStyle}>Got it!</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.modalHeaderText}>
-                    Transaction Successful
-                  </Text>
-                  <Text style={styles.modalBodyText}>
-                    ₹{parkArea.price_per_hr} has been deducted from your wallet
-                    for the booking.
-                  </Text>
-                  {/* <Pressable
-                    style={[styles.button, styles.buttonClose]}
-                    onPress={handleCloseModal}
-                  >
-                    <Text style={styles.textStyle}>Ok</Text>
-                  </Pressable> */}
-                </>
-              )}
+              <View style={styles.buttonRow}>
+                {/* Confirm Booking Button */}
+                <Pressable
+                  style={[styles.modalButton, styles.confirmButton]}
+                  onPress={handleBookNowPress}
+                >
+                  <Text style={styles.modalButtonText}>Confirm Booking</Text>
+                </Pressable>
+
+                {/* Cancel Button */}
+                <Pressable
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={handleCloseModal}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
         </View>
@@ -215,102 +222,110 @@ const BookingScreen = ({navigation, route}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
   },
-  scrollView: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 24,
+  parkAreaName: {
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 5,
+    color: "#333",
+    marginBottom: 15,
   },
-  subtitle: {
-    fontSize: 18,
-    color: "#606060",
+  detailCard: {
+    marginHorizontal: 15,
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: "#F7F7F7",
+    borderRadius: 10,
+  },
+  detailText: {
+    fontSize: 16,
+    color: "#666",
     marginBottom: 10,
-  },
-  pricePerHour: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 20,
   },
   ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 10,
   },
   ratingText: {
-    marginLeft: 10,
-    fontSize: 18,
+    marginLeft: 8,
+    fontSize: 16,
+    color: "#444",
   },
-  sectionTitle: {
+  facilitiesContainer: {},
+  facilityContainer: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+    borderRadius: 5,
+    padding: 5,
+    marginRight: 10,
+  },
+  facilityText: {
+    marginLeft: 5,
+    fontSize: 14,
+    color: "#4CAF50",
+  },
+  rateText: {
     fontSize: 18,
     fontWeight: "bold",
-    marginTop: 20,
+    color: "#4CAF50",
     marginBottom: 10,
   },
-  bookingDetailsContainer: {
-    marginHorizontal: 10,
-    padding: 10,
-    backgroundColor: "#f2f2f2", // Light grey background for the booking details section
-    borderRadius: 5,
+  userReviewsTitle: {
+    fontSize: 18,
+    marginVertical: 15,
+    color: "#333",
+    fontWeight: "bold",
+    marginLeft: 15,
   },
-  bookingDetailText: {
-    fontSize: 16,
-    marginBottom: 5, // Add space between details
-  },
-  featuresWrapper: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  featureContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    marginRight: 10,
-    backgroundColor: "#E8F5E9",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-  featureText: {
-    marginLeft: 10,
-    fontSize: 16,
-  },
-  review: {
+  reviewsContainer: {
+    paddingLeft: 15,
     marginBottom: 20,
   },
-  username: {
-    fontWeight: "bold",
-    fontSize: 16,
+  reviewCard: {
+    width: CARD_WIDTH,
+    backgroundColor: "#F0F0F0",
+    padding: 15,
+    marginRight: CARD_MARGIN,
+    borderRadius: 8,
   },
-  userReview: {
-    fontSize: 16,
-    color: "#606060",
+  reviewText: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 5,
+  },
+  reviewerName: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#444",
+  },
+  buttonContainer: {
+    marginVertical: 15,
   },
   button: {
-    backgroundColor: "#007bff",
-    padding: 15,
+    backgroundColor: "#4CAF50",
     borderRadius: 5,
+    padding: 15,
     alignItems: "center",
-    marginTop: 30,
+    marginHorizontal: 15,
   },
   buttonText: {
-    color: "#ffffff",
-    fontSize: 16,
+    color: "#FFF",
+    fontSize: 18,
     fontWeight: "bold",
-  },
-  infoButton: {
-    alignSelf: "center",
-    marginTop: 10,
   },
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 22,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalView: {
     margin: 20,
@@ -327,63 +342,48 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  buttonClose: {
-    backgroundColor: "#007bff",
-  },
-  textStyle: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  modalBodyText: {
-    marginBottom: 15,
-    textAlign: "center",
-    fontSize: 16,
-  },
-  closeIcon: {
+  closeButton: {
     position: "absolute",
     right: 10,
     top: 10,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent overlay
-  },
-  centeredView: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    elevation: 5,
-    width: "80%", // Consider setting a max width for better layout on tablets
-  },
-  modalHeaderText: {
+  modalTitle: {
     marginBottom: 15,
     textAlign: "center",
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
-  },
-  modalContent: {
-    marginBottom: 15,
   },
   modalText: {
     textAlign: "center",
     fontSize: 16,
-    marginBottom: 10,
+    marginBottom: 15,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 20,
+  },
+  modalButton: {
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginHorizontal: 10,
+    elevation: 2,
+    minWidth: 100,
+    minHeight: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmButton: {
+    backgroundColor: "#4CAF50",
+  },
+  cancelButton: {
+    backgroundColor: "#f44336",
+  },
+  modalButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 

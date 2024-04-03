@@ -6,6 +6,7 @@ import {
   ScrollView,
   Alert,
   FlatList,
+  Dimensions,
 } from "react-native";
 import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
 import axios from "axios";
@@ -13,13 +14,19 @@ import backendUrls from "../connections/backendUrls";
 import LoadingModal from "../components/LoadingModal";
 import Icon from "react-native-vector-icons/FontAwesome";
 
-import {Dimensions} from "react-native";
-
 const screenWidth = Dimensions.get("window").width;
 const CARD_WIDTH = screenWidth * 0.8;
-const CARD_MARGIN = 10;
+const CARD_MARGIN = 15; // Updated for consistency
 
 const {getParkAreaDetailsURL} = backendUrls;
+
+const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
+  if (!totalRating || !totalNumberOfRatings || totalNumberOfRatings === 0) {
+    return "Rating not available";
+  }
+  const averageRating = totalRating / totalNumberOfRatings;
+  return `${Math.round(averageRating * 100) / 100} (${totalNumberOfRatings})`;
+};
 
 export default function ParkSpaceDetails({navigation, route}) {
   const {space} = route.params;
@@ -63,20 +70,7 @@ export default function ParkSpaceDetails({navigation, route}) {
   }, [navigation, space.parkAreaName]);
 
   const renderFacility = ({item}) => (
-    <View
-      style={[
-        styles.facilityContainer,
-        {
-          flex: 1,
-          flexDirection: "row",
-          marginHorizontal: 5,
-          borderWidth: 1,
-          borderColor: "#4CAF50",
-          borderRadius: 5,
-          padding: 5,
-        },
-      ]}
-    >
+    <View style={styles.facilityContainer}>
       <Icon name="check" size={16} color="#4CAF50" />
       <Text style={styles.facilityText}>{item}</Text>
     </View>
@@ -105,12 +99,12 @@ export default function ParkSpaceDetails({navigation, route}) {
     </>
   );
 
-  const averageRating = parkAreaDetails
-    ? (
-        parkAreaDetails.rating.totalRating /
-        parkAreaDetails.rating.totalNumberOfRatings
-      ).toFixed(1)
-    : 0;
+  const renderReview = ({item}) => (
+    <View style={styles.reviewCard}>
+      <Text style={styles.reviewText}>{item.review}</Text>
+      <Text style={styles.reviewerName}>- {item.userName}</Text>
+    </View>
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -124,12 +118,12 @@ export default function ParkSpaceDetails({navigation, route}) {
             </Text>
             <View style={styles.ratingContainer}>
               <Icon name="star" size={20} color="#FFD700" />
-              <Text style={styles.ratingText}>{`${(
-                parkAreaDetails.rating.totalRating /
-                Math.max(parkAreaDetails.rating.totalNumberOfRatings, 1)
-              ).toFixed(1)} (${
-                parkAreaDetails.rating.totalNumberOfRatings
-              } reviews)`}</Text>
+              <Text style={styles.ratingText}>
+                {getFormattedAverageRating(
+                  parkAreaDetails.rating.totalRating,
+                  parkAreaDetails.rating.totalNumberOfRatings
+                )}
+              </Text>
             </View>
             <View style={styles.facilitiesContainer}>
               <FlatList
@@ -147,28 +141,22 @@ export default function ParkSpaceDetails({navigation, route}) {
               Today's Revenue: ₹{parkAreaDetails.revenue.todays}
             </Text>
           </View>
-          <Text
-            style={[
-              styles.detailText,
-              {fontSize: 17, marginVertical: 5, marginHorizontal: 10},
-            ]}
-          >
-            User Reviews
-          </Text>
-          <ScrollView
-            horizontal
+          <Text style={styles.userReviewsTitle}>User Reviews</Text>
+          <FlatList
+            data={parkAreaDetails.reviews}
+            renderItem={renderReview}
+            keyExtractor={(item, index) => index.toString()}
+            horizontal={true}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={CARD_WIDTH}
+            snapToInterval={CARD_WIDTH + CARD_MARGIN * 2}
             decelerationRate="fast"
             contentContainerStyle={styles.reviewsContainer}
-          >
-            {parkAreaDetails.reviews.map((review, index) => (
-              <View key={index} style={styles.reviewCard}>
-                <Text style={styles.reviewText}>{review.review}</Text>
-                <Text style={styles.reviewerName}>- {review.userName}</Text>
-              </View>
-            ))}
-          </ScrollView>
+            ListEmptyComponent={
+              <Text style={{marginLeft: 15, color: "#666"}}>
+                No reviews available
+              </Text>
+            }
+          />
 
           <View style={styles.bookingsSection}>
             {renderBookingInfo(
@@ -186,16 +174,17 @@ export default function ParkSpaceDetails({navigation, route}) {
   );
 }
 
+// Updated styles for a more uniform look and proper margins
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF", // Setting the background to white
+    backgroundColor: "#FFFFFF",
   },
   detailCard: {
-    margin: 10,
-    padding: 10,
+    margin: 15,
+    padding: 15,
     backgroundColor: "#F7F7F7",
-    borderRadius: 8,
+    borderRadius: 10,
   },
   detailText: {
     fontSize: 16,
@@ -215,22 +204,42 @@ const styles = StyleSheet.create({
   facilitiesContainer: {
     marginBottom: 20,
   },
+  facilityContainer: {
+    flexDirection: "row",
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+    borderRadius: 5,
+    padding: 5,
+    marginRight: 10, // Added margin to the right for spacing between items
+  },
+  facilityText: {
+    marginLeft: 5,
+    fontSize: 14,
+    color: "#4CAF50",
+  },
   rateAndRevenueText: {
     fontSize: 16,
     color: "#333",
     marginBottom: 8,
   },
+  userReviewsTitle: {
+    fontSize: 18,
+    marginVertical: 15,
+    color: "#333",
+    fontWeight: "bold",
+    marginLeft: 15,
+  },
   reviewsContainer: {
-    paddingLeft: 10,
+    paddingLeft: 15,
     marginBottom: 20,
   },
   reviewCard: {
     width: CARD_WIDTH,
-    backgroundColor: "#F0F0F0", // Slightly different shade for contrast
+    backgroundColor: "#F0F0F0",
     padding: 15,
-    marginRight: CARD_MARGIN * 2, // Assuming you're using the same margin for right
+    marginRight: CARD_MARGIN,
     borderRadius: 8,
-    justifyContent: "center", // Center content vertically if needed
   },
   reviewText: {
     fontSize: 14,
@@ -243,7 +252,7 @@ const styles = StyleSheet.create({
     color: "#444",
   },
   bookingsSection: {
-    margin: 20,
+    margin: 15,
   },
   sectionTitle: {
     fontSize: 18,
@@ -253,9 +262,9 @@ const styles = StyleSheet.create({
   },
   bookingInfo: {
     marginBottom: 10,
-    padding: 10,
-    backgroundColor: "#F7F7F7", // Consistent with detailCard
-    borderRadius: 8,
+    padding: 15,
+    backgroundColor: "#F7F7F7",
+    borderRadius: 10,
   },
   bookingText: {
     fontSize: 16,
@@ -266,5 +275,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
-  // Assuming other styles for icons, buttons, etc., are here
 });

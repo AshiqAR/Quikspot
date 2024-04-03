@@ -137,7 +137,11 @@ export default function MapScreen({navigation}) {
     setLocationIconColor("#4285F4");
     resetSearchInput();
     await getLocation();
-    setSearchLocation({location: location});
+    if (location) {
+      setSearchLocation({location: location});
+    } else {
+      Alert.alert("Location not found", "Please enable location services.");
+    }
     setShowParkAreas(true);
   };
 
@@ -398,8 +402,8 @@ export default function MapScreen({navigation}) {
                   latitude: park.location.latitude,
                   longitude: park.location.longitude,
                 }}
-                title={park.name}
-                description={`free slots: ${park.no_free_slots}`}
+                title={park.parkAreaName}
+                description={`free slots: ${park.availableSlots}`}
                 index={index}
                 color={getColorForMarker(index, suggestedParkAreas.length)}
                 onPress={() => {
@@ -414,8 +418,8 @@ export default function MapScreen({navigation}) {
                   latitude: park.location.latitude,
                   longitude: park.location.longitude,
                 }}
-                title={park.name}
-                description={`free slots: ${park.no_free_slots}`}
+                title={park.parkAreaName}
+                description={`free slots: ${park.availableSlots}`}
                 index={park.originalIndex}
                 color={getColorForMarker(index, visibleParks.length)}
                 onPress={() => handleMarkerPress(park.originalIndex)}
