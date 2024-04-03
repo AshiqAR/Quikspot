@@ -9,7 +9,7 @@ import {
 import React from "react";
 
 export default function LoadingModal({
-  message = "Loading...",
+  message = "",
   activityIndicatorColor = "black",
   isLoading,
 }) {

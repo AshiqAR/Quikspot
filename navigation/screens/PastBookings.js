@@ -14,7 +14,10 @@ import backendUrls from "../connections/backendUrls";
 import {useAuth} from "../context/AuthContext";
 import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
 import LoadingModal from "../components/LoadingModal";
-import {format, parseISO} from "date-fns";
+import {format, parseISO, set} from "date-fns";
+import ReviewModal from "../components/ReviewModal";
+
+const {addReviewRatingsURL} = backendUrls;
 
 const {pastBookingsURL} = backendUrls;
 
@@ -22,6 +25,13 @@ export default function PastBookings() {
   const {user} = useAuth();
   const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
   const [pastBookings, setPastBookings] = useState([]);
+  const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
+
+  const addReview = pastBookingId => {
+    setSelectedBookingId(pastBookingId);
+    setIsReviewModalVisible(true);
+  };
 
   const fetchPastBookings = async () => {
     try {
@@ -43,48 +53,41 @@ export default function PastBookings() {
     fetchPastBookings();
   }, []);
 
-  const addReview = bookingId => {
-    console.log("Adding review for bookingId:", bookingId);
+  const submitReview = async (parkAreaId, rating, review) => {
+    try {
+      console.log("Submitting review", parkAreaId, rating, review, user.name);
+      await axios.post(addReviewRatingsURL, {
+        pastBookingId: selectedBookingId,
+        userName: user.name,
+        rating,
+        review,
+      });
+      Alert.alert("Success", "Review submitted successfully.");
+      await fetchPastBookings();
+    } catch (error) {
+      console.log(error);
+      Alert.alert(
+        "Error",
+        "Failed to submit the review. Please try again later."
+      );
+    }
   };
 
   const renderBookingItem = ({item}) => {
-    const toISTAndFormat = (dateString, onlyTime = false) => {
-      if (!dateString) return "N/A";
-
-      const date = new Date(dateString);
-      const istOffset = 5.5;
-      const utc = date.getTime() + date.getTimezoneOffset() * 60000;
-      const istDate = new Date(utc + 3600000 * istOffset);
-
-      if (onlyTime) {
-        return istDate.toLocaleTimeString("en-IN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-      } else {
-        const options = {day: "2-digit", month: "short", year: "numeric"};
-        return istDate.toLocaleDateString("en-IN", options);
-      }
+    const formatDate = dateString => {
+      return format(parseISO(dateString), "MMM d yyyy, hh:mm a");
     };
 
     const isExpired = !item.checkInTime && !item.checkOutTime;
     let dateTimeDisplay;
     if (isExpired) {
-      dateTimeDisplay = `Booked: ${toISTAndFormat(
-        item.bookedTime,
-        true
-      )} on ${toISTAndFormat(item.bookedTime)}\nExpired: ${toISTAndFormat(
-        item.bookingExpirationTime,
-        true
-      )} on ${toISTAndFormat(item.bookingExpirationTime)}`;
+      dateTimeDisplay = `Booked: ${formatDate(
+        item.bookedTime
+      )}\nExpired: ${formatDate(item.bookingExpirationTime)}`;
     } else {
-      dateTimeDisplay = `Check-in: ${toISTAndFormat(
-        item.checkInTime,
-        true
-      )} on ${toISTAndFormat(item.checkInTime)} \nCheck-out: ${toISTAndFormat(
-        item.checkOutTime,
-        true
-      )} on ${toISTAndFormat(item.checkInTime)}`;
+      dateTimeDisplay = `Check-in: ${formatDate(
+        item.checkInTime
+      )}\nCheck-out: ${formatDate(item.checkOutTime)}`;
     }
 
     return (
@@ -109,20 +112,41 @@ export default function PastBookings() {
             >{`${item.vehicleId.make} ${item.vehicleId.model}`}</Text>
           </View>
           <Text style={styles.amount}>₹{item.amountTransferred}</Text>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => addReview(item._id)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.buttonText}>Review</Text>
-          </TouchableOpacity>
+          {!item.reviewAdded && (
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => addReview(item._id)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.buttonText}>Add Review</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
   };
 
+  const handleCloseReviewModal = () => {
+    setIsReviewModalVisible(false);
+    setSelectedBookingId(null);
+  };
+
+  const handleReviewSubmit = async (parkAreaId, rating, review) => {
+    await submitReview(parkAreaId, rating, review);
+    handleCloseReviewModal();
+  };
+
   return (
     <View style={styles.container}>
+      {
+        <ReviewModal
+          visible={isReviewModalVisible}
+          onClose={handleCloseReviewModal}
+          parkAreaId={selectedBookingId}
+          onSubmit={handleReviewSubmit}
+        />
+      }
+
       {isLoading && <LoadingModal visible={isLoading} />}
       <FlatList
         data={pastBookings}

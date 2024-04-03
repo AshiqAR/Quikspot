@@ -51,16 +51,8 @@ export default function ActiveBookings() {
   }, []);
 
   const renderBookingItem = ({item}) => {
-    // const formatDate = dateString => {
-    //   return format(parseISO(dateString), "PPpp");
-    // };
-
-    // const expirationOrCheckIn = item.checkInTime
-    //   ? `Check-in: ${formatDate(item.checkInTime)}`
-    //   : `Expiration: ${formatDate(item.bookingExpirationTime)}`;
-
     const formatDate = dateString => {
-      return format(parseISO(dateString), "PPpp");
+      return format(parseISO(dateString), "MMM d yyyy, hh:mm:ss a");
     };
 
     const expirationOrCheckIn = item.checkInTime ? (
@@ -186,7 +178,7 @@ const styles = StyleSheet.create({
   },
   expirationText: {
     fontSize: 14,
-    color: "#000",
+    color: "#d20",
     fontWeight: "bold",
     marginTop: 5,
   },
