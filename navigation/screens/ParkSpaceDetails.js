@@ -16,7 +16,7 @@ import Icon from "react-native-vector-icons/FontAwesome";
 
 const screenWidth = Dimensions.get("window").width;
 const CARD_WIDTH = screenWidth * 0.8;
-const CARD_MARGIN = 15; // Updated for consistency
+const CARD_MARGIN = 15; // Margin for the cards
 
 const {getParkAreaDetailsURL} = backendUrls;
 
@@ -148,16 +148,19 @@ export default function ParkSpaceDetails({navigation, route}) {
             keyExtractor={(item, index) => index.toString()}
             horizontal={true}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={CARD_WIDTH + CARD_MARGIN * 2}
+            snapToAlignment="start"
+            snapToInterval={CARD_WIDTH + CARD_MARGIN * 2} // Corrected to apply CARD_MARGIN to both sides
             decelerationRate="fast"
-            contentContainerStyle={styles.reviewsContainer}
+            contentContainerStyle={{
+              paddingLeft: CARD_MARGIN, // Adjusted for consistency
+              paddingRight: CARD_MARGIN, // Adjusted for consistency
+            }}
             ListEmptyComponent={
               <Text style={{marginLeft: 15, color: "#666"}}>
-                No reviews available
+                No reviews available.
               </Text>
             }
           />
-
           <View style={styles.bookingsSection}>
             {renderBookingInfo(
               parkAreaDetails.activeBookings || [],
@@ -174,7 +177,7 @@ export default function ParkSpaceDetails({navigation, route}) {
   );
 }
 
-// Updated styles for a more uniform look and proper margins
+// Styles updated for consistency and proper margins
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -211,67 +214,58 @@ const styles = StyleSheet.create({
     borderColor: "#4CAF50",
     borderRadius: 5,
     padding: 5,
-    marginRight: 10, // Added margin to the right for spacing between items
   },
   facilityText: {
     marginLeft: 5,
-    fontSize: 14,
     color: "#4CAF50",
   },
   rateAndRevenueText: {
     fontSize: 16,
-    color: "#333",
-    marginBottom: 8,
+    color: "#444",
   },
   userReviewsTitle: {
-    fontSize: 18,
-    marginVertical: 15,
-    color: "#333",
+    fontSize: 20,
     fontWeight: "bold",
-    marginLeft: 15,
-  },
-  reviewsContainer: {
-    paddingLeft: 15,
-    marginBottom: 20,
+    marginHorizontal: 15,
+    marginTop: 20,
+    marginBottom: 10,
   },
   reviewCard: {
     width: CARD_WIDTH,
-    backgroundColor: "#F0F0F0",
+    marginHorizontal: CARD_MARGIN,
+    backgroundColor: "#F7F7F7",
     padding: 15,
-    marginRight: CARD_MARGIN,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   reviewText: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 5,
+    fontSize: 16,
+    color: "#666",
   },
   reviewerName: {
     fontSize: 14,
-    fontWeight: "bold",
     color: "#444",
+    marginTop: 10,
+    textAlign: "right",
   },
   bookingsSection: {
     margin: 15,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#333",
   },
   bookingInfo: {
-    marginBottom: 10,
-    padding: 15,
     backgroundColor: "#F7F7F7",
+    padding: 10,
     borderRadius: 10,
+    marginBottom: 10,
   },
   bookingText: {
     fontSize: 16,
-    color: "#555",
+    color: "#444",
   },
   noBookings: {
-    marginBottom: 5,
     fontSize: 16,
     color: "#666",
   },

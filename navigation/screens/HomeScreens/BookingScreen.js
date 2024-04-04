@@ -157,7 +157,10 @@ const BookingScreen = ({navigation, route}) => {
               showsHorizontalScrollIndicator={false}
               snapToInterval={CARD_WIDTH + CARD_MARGIN * 2}
               decelerationRate="fast"
-              contentContainerStyle={styles.reviewsContainer}
+              contentContainerStyle={{
+                paddingLeft: CARD_MARGIN, // Adjusted for consistency
+                paddingRight: CARD_MARGIN, // Adjusted for consistency
+              }}
               ListEmptyComponent={
                 <Text style={{marginLeft: 15, color: "#666"}}>
                   No reviews available
@@ -280,14 +283,13 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   reviewsContainer: {
-    paddingLeft: 15,
     marginBottom: 20,
   },
   reviewCard: {
     width: CARD_WIDTH,
     backgroundColor: "#F0F0F0",
     padding: 15,
-    marginRight: CARD_MARGIN,
+    marginHorizontal: CARD_MARGIN,
     borderRadius: 8,
   },
   reviewText: {

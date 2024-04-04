@@ -37,7 +37,7 @@ export default function PastBookings() {
     try {
       startLoading();
       const response = await axios.post(pastBookingsURL, {userId: user._id});
-      setPastBookings(response.data.pastBookings);
+      setPastBookings(response.data.pastBookings.reverse());
       console.log("Past bookings:", response.data);
     } catch (error) {
       Alert.alert(
@@ -91,13 +91,21 @@ export default function PastBookings() {
     }
 
     return (
-      <View style={styles.card}>
+      <View
+        style={[
+          styles.card,
+          {backgroundColor: item.checkInTime != null ? "white" : "#f1f2f3"},
+        ]}
+      >
         <View style={styles.cardHeader}>
           <Text style={styles.title}>{item.parkAreaId.parkAreaName}</Text>
           <Text
             style={styles.subTitle}
           >{`${item.parkAreaId.address}, ${item.parkAreaId.city}, ${item.parkAreaId.state}`}</Text>
           <Text style={styles.subTitle}>{dateTimeDisplay}</Text>
+          {item.checkInTime == null && (
+            <Text style={{color: "red"}}>Expired Booking</Text>
+          )}
         </View>
         <View style={styles.cardContent}>
           <Icon
@@ -112,7 +120,7 @@ export default function PastBookings() {
             >{`${item.vehicleId.make} ${item.vehicleId.model}`}</Text>
           </View>
           <Text style={styles.amount}>₹{item.amountTransferred}</Text>
-          {!item.reviewAdded && (
+          {!item.reviewAdded && item.checkInTime != null && (
             <TouchableOpacity
               style={styles.button}
               onPress={() => addReview(item._id)}
@@ -157,6 +165,15 @@ export default function PastBookings() {
             refreshing={isLoading}
             onRefresh={fetchPastBookings}
           />
+        }
+        ListEmptyComponent={
+          <View
+            style={{flex: 1, justifyContent: "center", alignItems: "center"}}
+          >
+            <Text style={{fontSize: 17, color: "#666"}}>
+              You have no past bookings
+            </Text>
+          </View>
         }
       />
     </View>

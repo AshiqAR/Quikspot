@@ -122,6 +122,15 @@ export default function ActiveBookings() {
             onRefresh={fetchActiveBookings}
           />
         }
+        ListEmptyComponent={
+          <View
+            style={{flex: 1, justifyContent: "center", alignItems: "center"}}
+          >
+            <Text style={{fontSize: 17, color: "#666"}}>
+              You have no active bookings
+            </Text>
+          </View>
+        }
       />
     </View>
   );
