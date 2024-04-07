@@ -78,12 +78,16 @@ export default function PastBookings() {
       return format(parseISO(dateString), "MMM d yyyy, hh:mm a");
     };
 
-    const isExpired = !item.checkInTime && !item.checkOutTime;
-    let dateTimeDisplay;
-    if (isExpired) {
+    const isExpired = !item.checkInTime && !item.isCancelled;
+    let dateTimeDisplay, statusDisplay;
+    if (item.isCancelled) {
+      dateTimeDisplay = `Booked: ${formatDate(item.bookedTime)}`; // Assuming `updatedAt` is when the cancellation happened
+      statusDisplay = <Text style={{color: "red"}}>Cancelled Booking</Text>;
+    } else if (isExpired) {
       dateTimeDisplay = `Booked: ${formatDate(
         item.bookedTime
       )}\nExpired: ${formatDate(item.bookingExpirationTime)}`;
+      statusDisplay = <Text style={{color: "red"}}>Expired Booking</Text>;
     } else {
       dateTimeDisplay = `Check-in: ${formatDate(
         item.checkInTime
@@ -94,7 +98,13 @@ export default function PastBookings() {
       <View
         style={[
           styles.card,
-          {backgroundColor: item.checkInTime != null ? "white" : "#f1f2f3"},
+          {
+            backgroundColor: item.isCancelled
+              ? "#ffbaba"
+              : item.checkInTime != null
+              ? "white"
+              : "#f1f2f3",
+          },
         ]}
       >
         <View style={styles.cardHeader}>
@@ -103,9 +113,7 @@ export default function PastBookings() {
             style={styles.subTitle}
           >{`${item.parkAreaId.address}, ${item.parkAreaId.city}, ${item.parkAreaId.state}`}</Text>
           <Text style={styles.subTitle}>{dateTimeDisplay}</Text>
-          {item.checkInTime == null && (
-            <Text style={{color: "red"}}>Expired Booking</Text>
-          )}
+          {statusDisplay}
         </View>
         <View style={styles.cardContent}>
           <Icon
@@ -120,15 +128,17 @@ export default function PastBookings() {
             >{`${item.vehicleId.make} ${item.vehicleId.model}`}</Text>
           </View>
           <Text style={styles.amount}>₹{item.amountTransferred}</Text>
-          {!item.reviewAdded && item.checkInTime != null && (
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => addReview(item._id)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.buttonText}>Add Review</Text>
-            </TouchableOpacity>
-          )}
+          {!item.reviewAdded &&
+            item.checkInTime != null &&
+            !item.isCancelled && (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => addReview(item._id)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.buttonText}>Add Review</Text>
+              </TouchableOpacity>
+            )}
         </View>
       </View>
     );

@@ -17,7 +17,7 @@ import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent"
 import LoadingModal from "../components/LoadingModal";
 import {format, parseISO} from "date-fns";
 
-const {activeBookingsURL} = backendUrls;
+const {activeBookingsURL, cancelBookingURL} = backendUrls;
 
 const NavigateToParkArea = (latitude, longitude) => {
   Linking.openURL(
@@ -46,6 +46,43 @@ export default function ActiveBookings() {
     }
   };
 
+  const handleCancelBooking = async bookingId => {
+    try {
+      startLoading();
+      const response = await axios.post(cancelBookingURL, {bookingId});
+      if (response.data.success) {
+        Alert.alert("Success", response.data.message);
+        fetchActiveBookings();
+      } else {
+        Alert.alert("Error", response.data.message);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to cancel booking. Please try again later.");
+    } finally {
+      fetchActiveBookings();
+    }
+  };
+
+  const confirmCancelBooking = bookingId => {
+    Alert.alert(
+      "Cancel Booking",
+      "Do you want to cancel your booking? Cancellation is non-refundable.",
+      [
+        {
+          text: "No",
+          onPress: () => console.log("Cancellation aborted"),
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => handleCancelBooking(bookingId),
+          style: "destructive",
+        },
+      ],
+      {cancelable: false}
+    );
+  };
+
   useEffect(() => {
     fetchActiveBookings();
   }, []);
@@ -56,7 +93,9 @@ export default function ActiveBookings() {
     };
 
     const expirationOrCheckIn = item.checkInTime ? (
-      `Check-in: ${formatDate(item.checkInTime)}`
+      <Text style={styles.expirationText}>
+        Check-in: {formatDate(item.checkInTime)}
+      </Text>
     ) : (
       <Text style={styles.expirationText}>
         Expiration: {formatDate(item.bookingExpirationTime)}
@@ -91,20 +130,31 @@ export default function ActiveBookings() {
           </View>
         </View>
         <Text style={styles.amount}>
-          Amount Transferred: ₹{item.amountTransferred}
+          Amount Paid: ₹{item.amountTransferred}
         </Text>
-        <TouchableOpacity
-          style={styles.navigateButton}
-          onPress={() =>
-            NavigateToParkArea(
-              item.parkAreaId.location.latitude,
-              item.parkAreaId.location.longitude
-            )
-          }
-          activeOpacity={0.7}
-        >
-          <Text style={styles.navigateButtonText}>Navigate to Park Area</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.navigateButton}
+            onPress={() =>
+              NavigateToParkArea(
+                item.parkAreaId.location.latitude,
+                item.parkAreaId.location.longitude
+              )
+            }
+            activeOpacity={0.7}
+          >
+            <Text style={styles.navigateButtonText}>Navigate to Park Area</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => {
+              confirmCancelBooking(item._id);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.navigateButtonText}>Cancel Booking</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -136,7 +186,6 @@ export default function ActiveBookings() {
   );
 }
 
-// Styles adapted from your PastBookings screen for consistency
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
@@ -214,13 +263,29 @@ const styles = StyleSheet.create({
     color: "#4CAF50",
     marginTop: 10,
   },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+  },
   navigateButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#4CAF50", // Green
     borderRadius: 20,
     padding: 10,
-    marginTop: 10,
     justifyContent: "center",
     alignItems: "center",
+    flex: 2, // Takes twice the space of the cancel button
+    marginRight: 5, // Add margin to separate buttons
+  },
+  cancelButton: {
+    backgroundColor: "#D32F2F", // Red
+    borderRadius: 20,
+    padding: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1, // Takes half the space of the navigate button
+    marginLeft: 5, // Add margin to separate buttons
   },
   navigateButtonText: {
     color: "#ffffff",

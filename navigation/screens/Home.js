@@ -13,8 +13,6 @@ import Icon from "react-native-vector-icons/FontAwesome5";
 import {useAuth} from "../context/AuthContext";
 import MapView from "react-native-maps";
 import {mapStyle} from "../utilities/mapStyles";
-import CustomUserLocationMarker from "../components/CurrentLocationMarker";
-import ParkAreaMarker from "../components/ParkAreaMarker";
 import parkAreas from "../utilities/parkAreas";
 import {useParkingDetails} from "../context/ParkingContext";
 import ImageMarker from "../components/ImageMarker";
@@ -92,7 +90,7 @@ export default function Home({navigation}) {
     if (user.walletBalance < 100) {
       Alert.alert(
         "Insufficient balance",
-        "You need at least 100 in your wallet to search for a parking space."
+        `You need at least ₹100 in your wallet to search for a parking space.`
       );
       return;
     }

@@ -13,6 +13,7 @@ const backendUrls = {
   getMyMessagesURL: `${BACKEND_URL}/api/user/myMessages`,
   getMyTransactionsURL: `${BACKEND_URL}/api/user/myTransactions`,
   getMyVehiclesURL: `${BACKEND_URL}/api/user/myVehicles`,
+  deleteAVehicleURL: `${BACKEND_URL}/api/user/deleteVehicle`,
   getMyParkSpacesURL: `${BACKEND_URL}/api/user/myParkAreas`,
   getParkAreaDetailsURL: `${BACKEND_URL}/api/user/getParkAreaDetails`,
   getAllParkAreasURL: `${BACKEND_URL}/api/parkArea/getAllParkAreas`,
@@ -22,6 +23,8 @@ const backendUrls = {
   activeBookingsURL: `${BACKEND_URL}/api/user/getActiveBookings`,
   pastBookingsURL: `${BACKEND_URL}/api/user/getPastBookings`,
   addReviewRatingsURL: `${BACKEND_URL}/api/parkArea/addReview`,
+  bookASlotURL: `${BACKEND_URL}/api/parkArea/bookASlot`,
+  cancelBookingURL: `${BACKEND_URL}/api/parkArea/booking/cancelBooking`,
 };
 
 export default backendUrls;

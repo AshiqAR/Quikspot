@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
+  Alert,
 } from "react-native";
 import React, {useEffect, useState} from "react";
 import Icon from "react-native-vector-icons/FontAwesome5";
@@ -14,7 +15,7 @@ import axios from "axios";
 import LoadingModal from "../components/LoadingModal";
 import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
 
-const {getMyVehiclesURL} = backendUrls;
+const {getMyVehiclesURL, deleteAVehicleURL} = backendUrls;
 
 const titleCase = str => {
   if (!str) return "";
@@ -52,7 +53,62 @@ export default function MyVehicles({navigation}) {
   }, []);
 
   const handleDelete = id => {
-    console.log("Deleting vehicle with ID:", id);
+    Alert.alert(
+      "Delete Vehicle",
+      "Are you sure you want to delete this vehicle?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => console.log("Deletion cancelled"),
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            startLoading();
+            try {
+              const response = await axios.post(deleteAVehicleURL, {
+                vehicleId: id,
+                userId: user._id, // Assuming `user._id` is available in your component's scope
+              });
+              if (response.data.success) {
+                Alert.alert("Success", "Vehicle deleted successfully.");
+                await fetchVehicles();
+              } else {
+                Alert.alert("Error", response.data.message);
+              }
+            } catch (error) {
+              if (error.response) {
+                if (error.response.status === 400) {
+                  Alert.alert(
+                    "Error",
+                    "Cannot delete vehicle with active bookings."
+                  );
+                } else {
+                  Alert.alert(
+                    "Error",
+                    "An error occurred. Please try again later."
+                  );
+                }
+              } else if (error.request) {
+                Alert.alert(
+                  "Error",
+                  "The request was made but no response was received, check your network connection."
+                );
+              } else {
+                Alert.alert(
+                  "Error",
+                  "An error occurred. Please try again later."
+                );
+              }
+            } finally {
+              stopLoading();
+            }
+          },
+        },
+      ],
+      {cancelable: false}
+    );
   };
 
   const renderItem = ({item}) => (

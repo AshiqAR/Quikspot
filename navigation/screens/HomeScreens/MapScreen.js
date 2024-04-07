@@ -99,18 +99,27 @@ export default function MapScreen({navigation}) {
   }, [suggestedParkAreas]);
 
   useEffect(() => {
-    if (suggestedParkAreas.length > 0 && suggestedParkAreas) {
-      setCamera({
-        center: {
-          latitude: suggestedParkAreas[currentIndex].location.latitude,
-          longitude: suggestedParkAreas[currentIndex].location.longitude,
-        },
-        pitch: 2,
-        heading: 20,
-        zoom: 17.5,
-      });
+    // Ensure suggestedParkAreas is truthy and has items, and that currentIndex is within bounds
+    if (
+      suggestedParkAreas &&
+      suggestedParkAreas.length > 0 &&
+      currentIndex >= 0 &&
+      currentIndex < suggestedParkAreas.length
+    ) {
+      const selectedParkArea = suggestedParkAreas[currentIndex];
+      if (selectedParkArea && selectedParkArea.location) {
+        setCamera({
+          center: {
+            latitude: selectedParkArea.location.latitude,
+            longitude: selectedParkArea.location.longitude,
+          },
+          pitch: 2,
+          heading: 20,
+          zoom: 17.5,
+        });
+      }
     }
-  }, [currentIndex]);
+  }, [currentIndex]); // Ensure useEffect listens for changes to suggestedParkAreas too
 
   useEffect(() => {
     if (camera) {
@@ -173,6 +182,14 @@ export default function MapScreen({navigation}) {
 
   const handleCurrentLocationButtonClick = async () => {
     await getCurrentLocation();
+    if (location) {
+      mapRef.current.animateToRegion({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        latitudeDelta: LATITUDE_DELTA,
+        longitudeDelta: LONGITUDE_DELTA,
+      });
+    }
     setShowMarker(false);
     setShowParkAreas(true);
   };
@@ -306,7 +323,7 @@ export default function MapScreen({navigation}) {
         <GooglePlacesAutocomplete
           key={searchKey}
           placeholder="Search Place and Find Space"
-          onFail={error => console.error(error)}
+          onFail={error => console.log(error)}
           onPress={async (data, details = null) => {
             setSearchLocation({
               location: {

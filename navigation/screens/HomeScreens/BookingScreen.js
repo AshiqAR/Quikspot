@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   FlatList,
   Alert,
   Dimensions,
+  Animated,
+  Easing,
+  BackHandler,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import {useParkingDetails} from "../../context/ParkingContext";
@@ -18,25 +21,57 @@ const {parkAreaDetailsForBookingURL} = backendUrls;
 import axios from "axios";
 import useLoadingWithinComponent from "../../customHooks/useLoadingWithinComponent";
 import LoadingModal from "../../components/LoadingModal";
-
-const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
-  if (!totalRating || !totalNumberOfRatings || totalNumberOfRatings === 0) {
-    return "Rating not available";
-  }
-  const averageRating = totalRating / totalNumberOfRatings;
-  return `${Math.round(averageRating * 100) / 100} (${totalNumberOfRatings})`;
-};
-
-const screenWidth = Dimensions.get("window").width;
-const CARD_WIDTH = screenWidth * 0.8;
-const CARD_MARGIN = 15;
+import {useAuth} from "../../context/AuthContext";
+import TransactionAnimation from "../../components/TransactionAnimation";
+import VehicleDetails from "../../components/BookingScreenComponents/VehicleDetails";
+import ParkAreaBookingDetailsCard from "../../components/BookingScreenComponents/ParkAreaBookingDetailsCard";
+import UserReviews from "../../components/BookingScreenComponents/UserReviews";
 
 const BookingScreen = ({navigation, route}) => {
+  const {user, setUser} = useAuth();
   const {parkAreaId} = route.params;
-  const {bookingDetails} = useParkingDetails();
-  const [modalVisible, setModalVisible] = useState(false);
+  const {bookingDetails, bookParkSpace} = useParkingDetails();
   const [parkAreaDetails, setParkAreaDetails] = useState(null);
   const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
+  const [transactionVisible, setTransactionVisible] = useState(false);
+
+  const coolOffTime = 15; // In minutes
+  const [animation] = useState(
+    new Animated.Value(Dimensions.get("window").height)
+  );
+
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationOpacity] = useState(new Animated.Value(0));
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let toValue = 0;
+    let opacityToValue = 1;
+
+    if (showConfirmation) {
+      toValue = 0;
+      opacityToValue = 1; // Fade in
+    } else {
+      toValue = Dimensions.get("window").height;
+      opacityToValue = 0; // Fade out
+    }
+
+    Animated.parallel([
+      Animated.timing(animation, {
+        toValue: toValue,
+        duration: 400,
+        easing: showConfirmation
+          ? Easing.out(Easing.cubic)
+          : Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(confirmationOpacity, {
+        toValue: opacityToValue,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [showConfirmation, animation, confirmationOpacity]);
 
   const fetchParkAreaDetailsForBooking = async () => {
     startLoading();
@@ -59,38 +94,41 @@ const BookingScreen = ({navigation, route}) => {
   };
 
   useEffect(() => {
+    console.log(bookingDetails);
     fetchParkAreaDetailsForBooking();
   }, []);
 
-  useEffect(() => {
-    if (modalVisible) {
-      StatusBar.setBackgroundColor("rgba(0,0,0,0.5)");
-    } else {
-      StatusBar.setBackgroundColor("#FFF");
-    }
-  }, [modalVisible]);
-
   const handleBookNowPress = () => {
-    setModalVisible(true);
+    setShowConfirmation(true);
   };
 
-  const handleCloseModal = () => {
-    setModalVisible(false);
+  const handleCancelPress = () => {
+    setShowConfirmation(false);
   };
 
-  const renderFeatures = ({item}) => (
-    <View style={styles.facilityContainer}>
-      <Icon name="check" size={16} color="#4CAF50" />
-      <Text style={styles.facilityText}>{item}</Text>
-    </View>
-  );
-
-  const renderReview = ({item}) => (
-    <View style={styles.reviewCard}>
-      <Text style={styles.reviewText}>{item.review}</Text>
-      <Text style={styles.reviewerName}>- {item.userName}</Text>
-    </View>
-  );
+  const handleConfirmBooking = async () => {
+    try {
+      setMessage("Confirming your booking...");
+      setTransactionVisible(true);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setMessage("Initiating Payment from Wallet...");
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response = await bookParkSpace(900000);
+      if (response.success) {
+        setUser(response.user);
+        Alert.alert("Booking Confirmed", "Your booking has been confirmed.");
+        navigation.navigate("Home");
+        navigation.navigate("Activity");
+      } else {
+        Alert.alert("Error", response.error);
+        navigation.navigate("Home");
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setTransactionVisible(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -104,120 +142,74 @@ const BookingScreen = ({navigation, route}) => {
       {parkAreaDetails && (
         <View style={{flex: 1, justifyContent: "space-between"}}>
           <ScrollView style={styles.scrollView}>
-            <View style={styles.detailCard}>
-              <Text style={styles.parkAreaName}>
-                {parkAreaDetails.parkAreaName}
-              </Text>
-              <Text style={styles.detailText}>
-                {parkAreaDetails.address}, {parkAreaDetails.city},{" "}
-                {parkAreaDetails.state}
-              </Text>
-              <Text style={styles.detailText}>
-                Park Area Type: {parkAreaDetails.parkAreaType}
-              </Text>
-              <Text style={styles.rateText}>
-                Price: {"\u20B9"} {parkAreaDetails.ratePerHour}/hr
-              </Text>
-              <View style={styles.ratingContainer}>
-                <Icon name="star" size={20} color="#FFD700" />
-                <Text style={styles.ratingText}>
-                  {getFormattedAverageRating(
-                    parkAreaDetails.rating.totalRating,
-                    parkAreaDetails.rating.totalNumberOfRatings
-                  )}
-                </Text>
-              </View>
-              <View style={styles.facilitiesContainer}>
-                <FlatList
-                  horizontal
-                  data={parkAreaDetails.facilitiesAvailable}
-                  renderItem={renderFeatures}
-                  keyExtractor={(item, index) => index.toString()}
-                  showsHorizontalScrollIndicator={false}
-                />
-              </View>
-            </View>
-            <View style={styles.detailCard}>
-              <Text style={styles.parkAreaName}>Vehicle Details</Text>
-              <Text>
-                Vehicle Number: {bookingDetails.vehicle.vehicleNumber}
-              </Text>
-              <Text>
-                Make and Model: {bookingDetails.vehicle.make}{" "}
-                {bookingDetails.vehicle.model}
-              </Text>
-              <Text>Vehicle Type: {bookingDetails.vehicle.type}</Text>
-            </View>
-            <Text style={styles.userReviewsTitle}>User Reviews</Text>
-            <FlatList
-              data={parkAreaDetails.reviews}
-              renderItem={renderReview}
-              keyExtractor={(item, index) => index.toString()}
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={CARD_WIDTH + CARD_MARGIN * 2}
-              decelerationRate="fast"
-              contentContainerStyle={{
-                paddingLeft: CARD_MARGIN, // Adjusted for consistency
-                paddingRight: CARD_MARGIN, // Adjusted for consistency
-              }}
-              ListEmptyComponent={
-                <Text style={{marginLeft: 15, color: "#666"}}>
-                  No reviews available
-                </Text>
-              }
-            />
+            <ParkAreaBookingDetailsCard parkAreaDetails={parkAreaDetails} />
+            <VehicleDetails vehicle={bookingDetails.vehicle} />
+            <UserReviews reviews={parkAreaDetails.reviews} />
           </ScrollView>
-          <View style={styles.buttonContainer}>
-            <Pressable style={styles.button} onPress={handleBookNowPress}>
-              <Text style={styles.buttonText}>Book Now</Text>
-            </Pressable>
-          </View>
+          {showConfirmation ? (
+            transactionVisible ? (
+              <View
+                style={[
+                  styles.confirmationContainer,
+                  styles.transactionAnimationContainer,
+                ]}
+              >
+                <TransactionAnimation message={message} />
+              </View>
+            ) : (
+              <Animated.View
+                style={[
+                  styles.confirmationContainer,
+                  {
+                    transform: [{translateY: animation}],
+                    opacity: confirmationOpacity,
+                  },
+                ]}
+              >
+                <Text style={styles.confirmationTitle}>
+                  Confirm Your Booking
+                </Text>
+                <Text style={styles.confirmationDetails}>
+                  Park Space Name: {bookingDetails.parkArea.parkAreaName}
+                </Text>
+                <Text style={styles.confirmationDetails}>
+                  Parking Fee per Hour: {"\u20B9"}{" "}
+                  {bookingDetails.parkArea.ratePerHour}
+                </Text>
+                <Text style={styles.confirmationPrompt}>
+                  • Your booking will be valid for {coolOffTime} minutes. Please
+                  reach on time to avoid cancellation.
+                </Text>
+                <Text style={styles.confirmationPrompt}>
+                  • Please confirm to proceed with booking. {"\u20B9"}
+                  {bookingDetails.parkArea.ratePerHour} will be pre-deducted
+                  from your wallet.
+                </Text>
+                <View style={styles.buttonRow}>
+                  <Pressable
+                    style={[styles.button, styles.confirmButton]}
+                    onPress={handleConfirmBooking}
+                  >
+                    <Text style={styles.buttonText}>Confirm Booking</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.button, styles.cancelButton]}
+                    onPress={handleCancelPress}
+                  >
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </Animated.View>
+            )
+          ) : (
+            <View style={styles.buttonContainer}>
+              <Pressable style={styles.button} onPress={handleBookNowPress}>
+                <Text style={styles.buttonText}>Book Now</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
       )}
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={handleCloseModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <Pressable style={styles.closeButton} onPress={handleCloseModal}>
-                <Icon name="close" size={24} color="#000" />
-              </Pressable>
-              <Text style={styles.modalTitle}>Booking Information</Text>
-              <Text style={styles.modalText}>• Valid for 30 minutes.</Text>
-              <Text style={styles.modalText}>
-                • Reach on time to avoid cancellation.
-              </Text>
-              <Text style={styles.modalText}>
-                • An hour's parking fee will be pre-deducted.
-              </Text>
-
-              <View style={styles.buttonRow}>
-                {/* Confirm Booking Button */}
-                <Pressable
-                  style={[styles.modalButton, styles.confirmButton]}
-                  onPress={handleBookNowPress}
-                >
-                  <Text style={styles.modalButtonText}>Confirm Booking</Text>
-                </Pressable>
-
-                {/* Cancel Button */}
-                <Pressable
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={handleCloseModal}
-                >
-                  <Text style={styles.modalButtonText}>Cancel</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -226,81 +218,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-  },
-  parkAreaName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 15,
-  },
-  detailCard: {
-    marginHorizontal: 15,
-    marginTop: 15,
-    padding: 15,
-    backgroundColor: "#F7F7F7",
-    borderRadius: 10,
-  },
-  detailText: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 10,
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  ratingText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: "#444",
-  },
-  facilitiesContainer: {},
-  facilityContainer: {
-    flexDirection: "row",
-    borderWidth: 1,
-    borderColor: "#4CAF50",
-    borderRadius: 5,
-    padding: 5,
-    marginRight: 10,
-  },
-  facilityText: {
-    marginLeft: 5,
-    fontSize: 14,
-    color: "#4CAF50",
-  },
-  rateText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#4CAF50",
-    marginBottom: 10,
-  },
-  userReviewsTitle: {
-    fontSize: 18,
-    marginVertical: 15,
-    color: "#333",
-    fontWeight: "bold",
-    marginLeft: 15,
-  },
-  reviewsContainer: {
-    marginBottom: 20,
-  },
-  reviewCard: {
-    width: CARD_WIDTH,
-    backgroundColor: "#F0F0F0",
-    padding: 15,
-    marginHorizontal: CARD_MARGIN,
-    borderRadius: 8,
-  },
-  reviewText: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 5,
-  },
-  reviewerName: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#444",
   },
   buttonContainer: {
     marginVertical: 15,
@@ -312,80 +229,66 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 15,
   },
-  buttonText: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  centeredView: {
-    flex: 1,
+  transactionAnimationContainer: {
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 22,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
+  confirmationContainer: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderColor: "#dddddd",
+    borderWidth: 1,
+    shadowColor: "#000000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: -2, // Shadow to the top
     },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 10, // For Android elevation
+    // marginTop: 20, // Ensure it visually "pops" over other content
   },
-  closeButton: {
-    position: "absolute",
-    right: 10,
-    top: 10,
-  },
-  modalTitle: {
-    marginBottom: 15,
-    textAlign: "center",
-    fontSize: 18,
+  // Add to your StyleSheet object
+  confirmationTitle: {
+    fontSize: 22,
     fontWeight: "bold",
+    color: "#333333",
+    alignSelf: "center",
+    marginBottom: 10,
   },
-  modalText: {
-    textAlign: "center",
+  confirmationDetails: {
     fontSize: 16,
-    marginBottom: 15,
+    color: "#333333", // Darker text for better readability
+    marginBottom: 10, // Space between details
+  },
+  confirmationPrompt: {
+    fontSize: 14,
+    marginBottom: 10,
+    color: "#aa5353",
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
-  },
-  modalButton: {
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginHorizontal: 10,
-    elevation: 2,
-    minWidth: 100,
-    minHeight: 40,
-    alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    marginTop: 15,
   },
   confirmButton: {
     backgroundColor: "#4CAF50",
+    flex: 1,
   },
   cancelButton: {
     backgroundColor: "#f44336",
+    flex: 1,
   },
-  modalButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
   },
 });
 

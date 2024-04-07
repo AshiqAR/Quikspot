@@ -33,12 +33,26 @@ export default function Messages() {
     fetchMessages();
   }, []);
 
+  const formatDate = timestamp => {
+    const date = new Date(timestamp);
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const minutesStr = minutes < 10 ? "0" + minutes : minutes;
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    return `${hours}:${minutesStr} ${ampm}, ${day}/${month}/${year}`;
+  };
+
   const renderMessageItem = ({item}) => (
     <View style={styles.messageItem}>
       <View style={styles.messageBubble}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.details}>{item.message}</Text>
-        <Text style={styles.date}>{new Date(item.time).toLocaleString()}</Text>
+        <Text style={styles.date}>{formatDate(item.time)}</Text>
       </View>
     </View>
   );

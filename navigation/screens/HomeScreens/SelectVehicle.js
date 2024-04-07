@@ -1,4 +1,5 @@
-import React, {useEffect, useState} from "react";
+import React, {useState, useCallback} from "react";
+import {useFocusEffect} from "@react-navigation/native";
 import {
   View,
   Text,
@@ -43,12 +44,11 @@ export default function MyVehicles({navigation}) {
     }
   };
 
-  useEffect(() => {
-    if (vehicles == null) {
-      console.log("Fetching vehicles");
+  useFocusEffect(
+    useCallback(() => {
       fetchVehicles();
-    }
-  }, []);
+    }, [])
+  );
 
   const toggleSelection = id => {
     setSelectedVehicleId(prevId => (prevId === id ? null : id));
@@ -61,13 +61,7 @@ export default function MyVehicles({navigation}) {
       );
       if (selectedVehicle) {
         updateBookingDetails({
-          vehicle: {
-            vehicleId: selectedVehicle._id,
-            vehicleNumber: selectedVehicle.vehicleNumber,
-            type: selectedVehicle.type,
-            make: selectedVehicle.make,
-            model: selectedVehicle.model,
-          },
+          vehicle: selectedVehicle,
         });
         navigation.navigate("MapScreen");
       }
@@ -80,7 +74,14 @@ export default function MyVehicles({navigation}) {
     return (
       <TouchableOpacity
         style={[styles.card, isSelected && styles.selectedCard]}
-        onPress={() => toggleSelection(item._id)}
+        onPress={() => {
+          item.booked
+            ? Alert.alert(
+                "Booking Conflict",
+                "A booking for this vehicle already exist !\nYou cannot select this vehicle now."
+              )
+            : toggleSelection(item._id);
+        }}
       >
         <Icon
           name={item.type === "car" ? "car" : "motorcycle"}

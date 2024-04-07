@@ -138,7 +138,7 @@ export default function ParkSpaceDetails({navigation, route}) {
               Today's Rate Per Hour: ₹ {parkAreaDetails.ratePerHour}/hr
             </Text>
             <Text style={styles.rateAndRevenueText}>
-              Today's Revenue: ₹{parkAreaDetails.revenue.todays}
+              Total Earnings: ₹ {parkAreaDetails.totalEarnings}
             </Text>
           </View>
           <Text style={styles.userReviewsTitle}>User Reviews</Text>
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F7F7F7",
     padding: 10,
     borderRadius: 10,
-    marginBottom: 10,
+    marginVertical: 10,
   },
   bookingText: {
     fontSize: 16,

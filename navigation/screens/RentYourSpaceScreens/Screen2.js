@@ -97,7 +97,7 @@ export default function Screen2({navigation}) {
       });
   };
 
-  const parkSpaceOptions = ["Home", "Outdoor", "Dedicated"];
+  const parkSpaceOptions = ["Home", "Land", "Dedicated"];
   const [currentLocation, setCurrentLocation] = useState(null);
 
   const handleNextPress = () => {
@@ -112,11 +112,20 @@ export default function Screen2({navigation}) {
       pricePerHour <= 0 ||
       parkAreaDetails.parkSpaceType == ""
     ) {
-      alert(
+      Alert.alert(
+        "Fill in all required fields",
         "Please fill in all required fields with valid numbers where applicable."
       );
       return;
     }
+    if (Object.keys(parkAreaDetails.location).length === 0) {
+      Alert.alert(
+        "Location not selected",
+        "Please select a location for the parking area"
+      );
+      return;
+    }
+    console.log(parkAreaDetails);
     navigation.navigate("Screen3");
   };
 
@@ -271,7 +280,9 @@ export default function Screen2({navigation}) {
           <View style={{height: 300, marginTop: 20, marginBottom: 30}}>
             <CustomMap
               initialRegion={mapRegion}
+              currentLocation={currentLocation}
               onLocationSelect={location => setCurrentLocation(location)}
+              updateLocation={updateParkAreaDetails.updateLocation}
             />
           </View>
         )}

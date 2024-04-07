@@ -4,6 +4,14 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const {width} = Dimensions.get("window");
 
+const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
+  if (!totalRating || !totalNumberOfRatings || totalNumberOfRatings === 0) {
+    return "Rating not available";
+  }
+  const averageRating = totalRating / totalNumberOfRatings;
+  return `${Math.round(averageRating * 100) / 100} (${totalNumberOfRatings})`;
+};
+
 const getRatingColor = rating => {
   const highColor = {r: 255, g: 215, b: 0}; // Gold
   const lowColor = {r: 184, g: 134, b: 11}; // Darker gold/brown
@@ -52,8 +60,12 @@ const ParkAreaCard = ({parkArea, onPress}) => {
             size={18}
           />
           <Text style={styles.ratingText}>
-            {parkArea.rating.totalRating} (
-            {parkArea.rating.totalNumberOfRatings})
+            {parkArea.rating.totalRating === 0
+              ? "No ratings yet"
+              : getFormattedAverageRating(
+                  parkArea.rating.totalRating,
+                  parkArea.rating.totalNumberOfRatings
+                )}
           </Text>
         </View>
       </View>
