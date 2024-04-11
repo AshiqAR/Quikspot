@@ -56,7 +56,7 @@ export default function MapScreen({navigation}) {
   useEffect(() => {
     const startFetchingParkAreas = () => {
       fetchAllParkAreas();
-      fetchIntervalRef.current = setInterval(fetchAllParkAreas, 1000000);
+      fetchIntervalRef.current = setInterval(fetchAllParkAreas, 100000);
     };
 
     startFetchingParkAreas();
@@ -77,6 +77,7 @@ export default function MapScreen({navigation}) {
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
+    console.log("location", location);
     if (location) {
       mapRef.current.animateToRegion(
         {
@@ -119,7 +120,7 @@ export default function MapScreen({navigation}) {
         });
       }
     }
-  }, [currentIndex]); // Ensure useEffect listens for changes to suggestedParkAreas too
+  }, [currentIndex]);
 
   useEffect(() => {
     if (camera) {

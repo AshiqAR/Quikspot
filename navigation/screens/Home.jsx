@@ -87,6 +87,13 @@ export default function Home({navigation}) {
   }, [locationSharingEnabled, location]);
 
   const handleSearchForParkingSpace = () => {
+    if (!locationSharingEnabled || !location) {
+      Alert.alert(
+        "Location Sharing Disabled",
+        "Please enable location sharing to search for parking spaces."
+      );
+      return;
+    }
     if (user.walletBalance < 100) {
       Alert.alert(
         "Insufficient balance",

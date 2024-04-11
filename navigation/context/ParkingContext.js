@@ -14,6 +14,22 @@ import backendUrls from "../connections/backendUrls";
 const {getAllParkAreasURL, bookASlotURL} = backendUrls;
 import {isEqual} from "lodash";
 import {useAuth} from "./AuthContext";
+import {MAP_API_KEY} from "@env";
+
+const calculateDistanceUsingAPI = async (origin, destinations) => {
+  const destinationsQuery = destinations
+    .map(dest => `${dest.lat},${dest.lng}`)
+    .join("|");
+  try {
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${origin.latitude},${origin.longitude}&destinations=${destinationsQuery}&key=${MAP_API_KEY}`
+    );
+    return response.data.rows[0].elements;
+  } catch (error) {
+    console.error("Error fetching distance matrix: ", error);
+    return [];
+  }
+};
 
 const ParkingContext = createContext();
 
@@ -26,6 +42,7 @@ export const ParkingDataProvider = ({children}) => {
   const [searchLocation, setSearchLocation] = useState(null); // location to search for park areas
   const [suggestedParkAreas, setSuggestedParkAreas] = useState([]);
   const [selectedParkArea, setSelectedParkArea] = useState(null);
+  const [currentUserLocation, setCurrentUserLocation] = useState(null);
 
   const bookParkSpace = async coolOffTime => {
     try {
@@ -53,23 +70,49 @@ export const ParkingDataProvider = ({children}) => {
     }
   };
   const fetchAllParkAreas = useCallback(async () => {
+    if (!currentUserLocation) {
+      console.log("User location is not available.");
+      return;
+    }
+
     try {
       const response = await axios.get(getAllParkAreasURL);
       if (response.data.success) {
-        // Perform deep comparison
         if (!isEqual(response.data.parkAreas, parkAreas)) {
-          setParkAreas(response.data.parkAreas);
-          console.log("Park Areas updated: ", response.data.parkAreas);
+          const parkAreasWithDistance = await Promise.all(
+            response.data.parkAreas.map(async parkArea => {
+              const distances = await calculateDistanceUsingAPI(
+                currentUserLocation,
+                [
+                  {
+                    lat: parkArea.location.latitude,
+                    lng: parkArea.location.longitude,
+                  },
+                ]
+              );
+              const distanceValue = distances[0].distance.value; // meters
+              const durationValue = distances[0].duration.value; // seconds
+
+              return {
+                ...parkArea,
+                distance: distanceValue,
+                duration: durationValue,
+              };
+            })
+          );
+          setParkAreas(parkAreasWithDistance);
+          console.log("Park Areas updated: ", parkAreasWithDistance);
         } else {
-          console.log("No changes in Park Areas");
+          console.log("No changes in Park Areas.");
         }
       } else {
-        Alert.alert("Error", "Failed to fetch park areas");
+        Alert.alert("Error", "Failed to fetch park areas.");
       }
     } catch (err) {
-      Alert.alert("Error", "Failed to fetch park areas");
+      console.error("Error fetching park areas: ", err);
+      Alert.alert("Error", "Failed to fetch park areas.");
     }
-  }, [parkAreas]);
+  }, [currentUserLocation, parkAreas]);
 
   const updateSelectedParkArea = parkArea => {
     setSelectedParkArea(parkArea);
@@ -145,6 +188,7 @@ export const ParkingDataProvider = ({children}) => {
           position => {
             setLocationSharingEnabled(true);
             setLocation(position["coords"]);
+            setCurrentUserLocation(position["coords"]);
           },
           error => {
             setLocationSharingEnabled(false);
@@ -193,6 +237,7 @@ export const ParkingDataProvider = ({children}) => {
         updateSelectedParkArea,
         resetSelectedParkArea,
         fetchAllParkAreas,
+        currentUserLocation,
 
         bookParkSpace,
       }}

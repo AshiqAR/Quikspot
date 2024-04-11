@@ -13,6 +13,7 @@ import axios from "axios";
 import backendUrls from "../connections/backendUrls";
 import LoadingModal from "../components/LoadingModal";
 import Icon from "react-native-vector-icons/FontAwesome";
+import UserReviews from "../components/BookingScreenComponents/UserReviews";
 
 const screenWidth = Dimensions.get("window").width;
 const CARD_WIDTH = screenWidth * 0.8;
@@ -76,35 +77,62 @@ export default function ParkSpaceDetails({navigation, route}) {
     </View>
   );
 
-  const renderBookingInfo = (bookings, title) => (
-    <>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {bookings.length > 0 ? (
-        bookings.map(booking => (
-          <View key={booking._id} style={styles.bookingInfo}>
+  const renderActiveBooking = booking => {
+    return (
+      <View key={booking._id} style={styles.bookingInfo}>
+        <Text style={styles.bookingText}>
+          Vehicle: {booking.vehicleId.vehicleNumber}
+        </Text>
+        <Text style={styles.bookingText}>Owner: {booking.userId.name}</Text>
+        {booking.checkInTime ? (
+          <>
             <Text style={styles.bookingText}>
-              Vehicle: {booking.vehicleId.vehicleNumber}
+              Check-In Time: {new Date(booking.checkInTime).toLocaleString()}
             </Text>
-            <Text style={styles.bookingText}>Owner: {booking.userId.name}</Text>
-            {title === "Past Bookings" && (
-              <Text style={styles.bookingText}>
-                Checked Out: {booking.checkOutTime}
-              </Text>
-            )}
-          </View>
-        ))
-      ) : (
-        <Text style={styles.noBookings}>No {title.toLowerCase()}.</Text>
-      )}
-    </>
-  );
+          </>
+        ) : (
+          <>
+            <Text style={styles.bookingText}>
+              Booking Time: {new Date(booking.bookedTime).toLocaleString()}
+            </Text>
+            <Text style={styles.bookingText}>
+              Expiration Time:{" "}
+              {new Date(booking.bookingExpirationTime).toLocaleString()}
+            </Text>
+          </>
+        )}
+        <Text style={styles.bookingText}>
+          Amount Transferred: ₹ {booking.amountTransferred}
+        </Text>
+      </View>
+    );
+  };
 
-  const renderReview = ({item}) => (
-    <View style={styles.reviewCard}>
-      <Text style={styles.reviewText}>{item.review}</Text>
-      <Text style={styles.reviewerName}>- {item.userName}</Text>
-    </View>
-  );
+  const renderPastBooking = booking => {
+    return (
+      <View key={booking._id} style={styles.bookingInfo}>
+        <Text style={styles.bookingText}>
+          Vehicle: {booking.vehicleId.vehicleNumber}
+        </Text>
+        <Text style={styles.bookingText}>Owner: {booking.userId.name}</Text>
+        {booking.checkInTime ? (
+          <>
+            <Text style={styles.bookingText}>
+              Check-In Time: {new Date(booking.checkInTime).toLocaleString()}
+            </Text>
+            <Text style={styles.bookingText}>
+              Check-Out Time: {new Date(booking.checkOutTime).toLocaleString()}
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.bookingText}>Expired Booking</Text>
+        )}
+        <Text style={styles.bookingText}>
+          Amount Transferred: ₹ {booking.amountTransferred}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -141,34 +169,20 @@ export default function ParkSpaceDetails({navigation, route}) {
               Total Earnings: ₹ {parkAreaDetails.totalEarnings}
             </Text>
           </View>
-          <Text style={styles.userReviewsTitle}>User Reviews</Text>
-          <FlatList
-            data={parkAreaDetails.reviews}
-            renderItem={renderReview}
-            keyExtractor={(item, index) => index.toString()}
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            snapToAlignment="start"
-            snapToInterval={CARD_WIDTH + CARD_MARGIN * 2} // Corrected to apply CARD_MARGIN to both sides
-            decelerationRate="fast"
-            contentContainerStyle={{
-              paddingLeft: CARD_MARGIN, // Adjusted for consistency
-              paddingRight: CARD_MARGIN, // Adjusted for consistency
-            }}
-            ListEmptyComponent={
-              <Text style={{marginLeft: 15, color: "#666"}}>
-                No reviews available.
-              </Text>
-            }
-          />
+          <UserReviews reviews={parkAreaDetails.reviews} />
           <View style={styles.bookingsSection}>
-            {renderBookingInfo(
-              parkAreaDetails.activeBookings || [],
-              "Active Bookings"
+            <Text style={styles.sectionTitle}>Active Bookings</Text>
+            {parkAreaDetails.activeBookings.length > 0 ? (
+              parkAreaDetails.activeBookings.map(renderActiveBooking)
+            ) : (
+              <Text style={styles.noBookings}>No active bookings.</Text>
             )}
-            {renderBookingInfo(
-              parkAreaDetails.pastBookings || [],
-              "Past Bookings"
+
+            <Text style={styles.sectionTitle}>Past Bookings</Text>
+            {parkAreaDetails.pastBookings.length > 0 ? (
+              parkAreaDetails.pastBookings.map(renderPastBooking)
+            ) : (
+              <Text style={styles.noBookings}>No past bookings.</Text>
             )}
           </View>
         </>
@@ -222,30 +236,6 @@ const styles = StyleSheet.create({
   rateAndRevenueText: {
     fontSize: 16,
     color: "#444",
-  },
-  userReviewsTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginHorizontal: 15,
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  reviewCard: {
-    width: CARD_WIDTH,
-    marginHorizontal: CARD_MARGIN,
-    backgroundColor: "#F7F7F7",
-    padding: 15,
-    borderRadius: 10,
-  },
-  reviewText: {
-    fontSize: 16,
-    color: "#666",
-  },
-  reviewerName: {
-    fontSize: 14,
-    color: "#444",
-    marginTop: 10,
-    textAlign: "right",
   },
   bookingsSection: {
     margin: 15,

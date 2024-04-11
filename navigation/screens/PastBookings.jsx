@@ -100,7 +100,8 @@ export default function PastBookings() {
           styles.card,
           {
             backgroundColor: item.isCancelled
-              ? "#ffbaba"
+              ? // ? "#ffbaba"
+                "#a7c7e7"
               : item.checkInTime != null
               ? "white"
               : "#f1f2f3",

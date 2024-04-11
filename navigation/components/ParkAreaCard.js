@@ -4,6 +4,13 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const {width} = Dimensions.get("window");
 
+const getFormattedDistance = distance_in_m => {
+  if (distance_in_m < 1000) {
+    return `${Math.round(distance_in_m)} m`;
+  }
+  return `${(distance_in_m / 1000).toFixed(1)} km`;
+};
+
 const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
   if (!totalRating || !totalNumberOfRatings || totalNumberOfRatings === 0) {
     return "Rating not available";
@@ -34,13 +41,20 @@ const ParkAreaCard = ({parkArea, onPress}) => {
     <Pressable style={styles.card} onPress={onPress}>
       <View style={styles.header}>
         <Text style={styles.title}>{parkArea.parkAreaName}</Text>
-        <View style={styles.rateContainer}>
-          <Text style={styles.rupeeSymbol}>{"\u20B9"}</Text>
-          <Text style={styles.rateText}>{parkArea.ratePerHour}/hr</Text>
+        <View style={styles.rateAndDistanceContainer}>
+          <View style={styles.rateContainer}>
+            <Text style={styles.rupeeSymbol}>{"\u20B9"}</Text>
+            <Text style={styles.rateText}>{parkArea.ratePerHour}/hr</Text>
+          </View>
+          {parkArea.distance && (
+            <Text style={styles.distanceText}>
+              {getFormattedDistance(parkArea.distance)}
+            </Text>
+          )}
         </View>
       </View>
       <Text style={styles.subtitle}>
-        {parkArea.address} - {parkArea.distance}dist km
+        {parkArea.address}, {parkArea.city}, {parkArea.state}
       </Text>
 
       <View style={styles.infoContainer}>
@@ -99,6 +113,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  rateAndDistanceContainer: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+  },
+  distanceText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4A90E2", // Different color for distance
+    marginBottom: 3, // Slight space between distance and rate
   },
   title: {
     // Ensure the title style accommodates the new layout

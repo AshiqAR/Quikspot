@@ -3,6 +3,9 @@
 .DS_Store
 
 __tests__/
+.bundle/
+.cache/
+.vscode/
 *.log
 *.log.*
 .bundle/
@@ -72,3 +75,5 @@ yarn-error.log
 
 # testing
 /coverage
+
+/android/app/google-services.json
