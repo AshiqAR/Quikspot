@@ -218,6 +218,7 @@ const BookingScreen = ({navigation, route}) => {
             <ParkAreaBookingDetailsCard
               parkAreaDetails={parkAreaDetails}
               freeSlots={freeSlots}
+              vehicleType={bookingDetails.vehicle.type}
             />
             <VehicleDetails vehicle={bookingDetails.vehicle} />
             <UserReviews reviews={parkAreaDetails.reviews} />

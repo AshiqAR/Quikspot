@@ -1,7 +1,7 @@
 // ParkAreaBookingDetailsCard.js
 import React from "react";
 import {View, Text, FlatList, StyleSheet} from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import Icon from "react-native-vector-icons/FontAwesome";
 
 const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
   if (!totalRating || !totalNumberOfRatings || totalNumberOfRatings === 0) {
@@ -18,7 +18,11 @@ const renderFeatures = ({item}) => (
   </View>
 );
 
-const ParkAreaBookingDetailsCard = ({parkAreaDetails, freeSlots}) => {
+const ParkAreaBookingDetailsCard = ({
+  parkAreaDetails,
+  freeSlots,
+  vehicleType,
+}) => {
   return (
     <View style={styles.detailCard}>
       <Text style={styles.parkAreaName}>{parkAreaDetails.parkAreaName}</Text>
@@ -32,7 +36,14 @@ const ParkAreaBookingDetailsCard = ({parkAreaDetails, freeSlots}) => {
       <Text style={styles.rateText}>
         Price: {"\u20B9"} {parkAreaDetails.ratePerHour}/hr
       </Text>
-      <Text style={styles.freeSlots}>Available Slots: {freeSlots}</Text>
+      <View style={styles.slotContainer}>
+        <Text style={styles.freeSlots}>Available Slots: {freeSlots}</Text>
+        <Icon
+          style={styles.slotIcon}
+          name={vehicleType === "car" ? "car" : "motorcycle"}
+          size={20}
+        ></Icon>
+      </View>
       <View style={styles.ratingContainer}>
         <Icon name="star" size={20} color="#FFD700" />
         <Text style={styles.ratingText}>
@@ -85,6 +96,14 @@ const styles = StyleSheet.create({
     color: "#902E2F",
     fontWeight: "bold",
     marginBottom: 10,
+  },
+  slotContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  slotIcon: {
+    marginLeft: "auto",
+    color: "#902E2F",
   },
   ratingContainer: {
     flexDirection: "row",
