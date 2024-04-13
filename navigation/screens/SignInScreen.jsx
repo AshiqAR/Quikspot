@@ -101,6 +101,7 @@ export default function SignInScreen({navigation, route}) {
           keyboardType="numeric"
           onFocus={() => setMobileNumberIsFocused(true)}
           onBlur={() => setMobileNumberIsFocused(false)}
+          placeholderTextColor="#888888"
         />
         <View style={styles.passwordContainer}>
           <TextInput
@@ -115,6 +116,7 @@ export default function SignInScreen({navigation, route}) {
             secureTextEntry={!passwordVisible} // Toggle based on passwordVisible state
             onFocus={() => setPasswordIsFocused(true)}
             onBlur={() => setPasswordIsFocused(false)}
+            placeholderTextColor="#888888"
           />
           <Pressable
             onPress={togglePasswordVisibility}
@@ -152,7 +154,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
+    backgroundColor: "white", // Neutral light gray background
   },
   innerContainer: {
     width: "80%",
@@ -171,8 +173,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: "#cccccc",
+    borderColor: "#aaaaaa", // Lighter gray for border to blend in both themes
     fontSize: 18,
+    backgroundColor: "#fdfdfd", // White background for inputs to stand out in both themes
+    color: "black", // Black text for high contrast in light mode and acceptable in dark mode
   },
   passwordContainer: {
     flexDirection: "row",
@@ -188,10 +192,10 @@ const styles = StyleSheet.create({
     top: 15,
   },
   inputFocused: {
-    borderColor: "black",
+    borderColor: "#333333", // Darker border on focus to be visible in both themes
   },
   button: {
-    backgroundColor: "black",
+    backgroundColor: "black", // Dark gray button that works well in both light and dark modes
     padding: 15,
     borderRadius: 5,
     alignItems: "center",
@@ -204,18 +208,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   signUpTextDialogue: {
-    color: "gray",
+    color: "#333333", // Dark gray text for dialogue, which is neutral
     fontSize: 17,
     textAlign: "center",
     marginTop: 15,
   },
   buttonText: {
-    color: "#ffffff",
+    color: "white", // White text for contrast on the dark gray button
     fontSize: 17,
   },
   signUpText: {
-    // color: "#007bff",
-    color: "darkgreen",
+    color: "#006600", // Deeper green for the link, providing good contrast in both modes
     fontWeight: "bold",
     fontSize: 17,
     textAlign: "center",

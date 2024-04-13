@@ -199,10 +199,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   label: {
+    color: "#333",
     marginBottom: 5,
     fontSize: 16,
   },
   input: {
+    color: "#333",
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 8,

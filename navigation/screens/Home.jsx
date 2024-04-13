@@ -1,14 +1,7 @@
 import React, {useState, useEffect, useRef, useCallback} from "react";
 import {debounce} from "lodash";
 import randomLocation from "random-location";
-import {
-  View,
-  Pressable,
-  StyleSheet,
-  Text,
-  Alert,
-  Dimensions,
-} from "react-native";
+import {View, Pressable, StyleSheet, Text, Alert} from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import {useAuth} from "../context/AuthContext";
 import MapView from "react-native-maps";
@@ -187,6 +180,7 @@ const styles = StyleSheet.create({
   searchText: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "gray",
   },
   listItem: {
     padding: 10,
@@ -199,11 +193,5 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
     marginBottom: -70,
-  },
-  appDetails: {
-    // Add any styles for the app details section if needed
-  },
-  appDetailsText: {
-    // Add any styles for the app details text if needed
   },
 });

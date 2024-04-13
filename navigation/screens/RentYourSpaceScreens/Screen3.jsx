@@ -235,6 +235,7 @@ export default function Screen3({navigation}) {
 
 const styles = StyleSheet.create({
   label: {
+    color: "#333",
     marginBottom: 5,
     fontSize: 16,
   },

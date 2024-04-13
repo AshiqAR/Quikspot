@@ -119,10 +119,15 @@ export default function AddNewVehicle({navigation}) {
                     setVisible(false);
                   }}
                 >
-                  <Text style={{fontSize: 17, fontWeight: "bold"}}>{item}</Text>
+                  <Text
+                    style={{fontSize: 17, fontWeight: "bold", color: "#333"}}
+                  >
+                    {item}
+                  </Text>
                 </TouchableOpacity>
               )}
               keyExtractor={(item, index) => index.toString()}
+              contentContainerStyle={{backgroundColor: "white", zIndex: 14}}
             />
           </View>
         )}
@@ -236,6 +241,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
+    color: "#333",
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
@@ -256,6 +262,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     fontSize: 18,
+    color: "#333",
   },
   button: {
     height: 45,
@@ -275,8 +282,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 5,
     width: 200,
+    opacity: 1, // Ensures the dropdown is not transparent
   },
   item: {
     padding: 10,
+    backgroundColor: "white",
   },
 });

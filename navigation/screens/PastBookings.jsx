@@ -121,6 +121,7 @@ export default function PastBookings() {
             name={item.vehicleId.type === "motorcycle" ? "motorcycle" : "car"}
             size={20}
             style={styles.icon}
+            color="#333"
           />
           <View style={styles.vehicleDetails}>
             <Text style={styles.details}>{item.vehicleId.vehicleNumber}</Text>
@@ -231,9 +232,11 @@ const styles = StyleSheet.create({
   },
   details: {
     fontSize: 14,
+    color: "#333",
   },
   detailsSmall: {
     fontSize: 12,
+    color: "#666",
   },
   amount: {
     fontSize: 20,

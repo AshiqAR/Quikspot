@@ -157,6 +157,7 @@ const styles = StyleSheet.create({
   },
   title: {
     // Ensure the title style accommodates the new layout
+    color: "#333",
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 2,
@@ -218,6 +219,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     marginLeft: 5,
+    color: "#333",
   },
 });
 

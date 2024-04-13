@@ -185,6 +185,7 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: 5,
     fontSize: 16,
+    color: "#333",
   },
   input: {
     borderWidth: 1,
@@ -195,6 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 15,
     backgroundColor: "#f9f9f9",
+    color: "#333",
 
     shadowColor: "#000",
     shadowOffset: {width: 0, height: 2},
