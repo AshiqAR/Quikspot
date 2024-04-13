@@ -29,6 +29,7 @@ import UserReviews from "../../components/BookingScreenComponents/UserReviews";
 import {
   getAvailableSlots,
   isIotDataConsistent,
+  getCoolOffTime,
 } from "../../utilities/FreeSlotsCompute";
 import database from "@react-native-firebase/database";
 
@@ -43,7 +44,6 @@ const BookingScreen = ({navigation, route}) => {
   const [iotData, setIotData] = useState({});
   const [activeBookingsData, setActiveBookingsData] = useState({});
 
-  const coolOffTime = 15; // In minutes
   const [animation] = useState(
     new Animated.Value(Dimensions.get("window").height)
   );
@@ -184,7 +184,9 @@ const BookingScreen = ({navigation, route}) => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       setMessage("Initiating Payment from Wallet...");
       await new Promise(resolve => setTimeout(resolve, 1500));
-      const response = await bookParkSpace(900000);
+      const response = await bookParkSpace(
+        getCoolOffTime(bookingDetails.parkArea.duration)
+      );
       if (response.success) {
         setUser(response.user);
         Alert.alert("Booking Confirmed", "Your booking has been confirmed.");
@@ -251,8 +253,9 @@ const BookingScreen = ({navigation, route}) => {
                   {bookingDetails.parkArea.ratePerHour}
                 </Text>
                 <Text style={styles.confirmationPrompt}>
-                  • Your booking will be valid for {coolOffTime} minutes. Please
-                  reach on time to avoid cancellation.
+                  • Your booking will be valid for{" "}
+                  {getCoolOffTime(bookingDetails.parkArea.duration)} minutes.
+                  Please reach on time to avoid cancellation.
                 </Text>
                 <Text style={styles.confirmationPrompt}>
                   • Please confirm to proceed with booking. {"\u20B9"}

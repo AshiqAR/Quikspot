@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {View, Text, StyleSheet, Dimensions, Pressable} from "react-native";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import Icon from "react-native-vector-icons/FontAwesome";
 import {getAvailableSlots} from "../utilities/FreeSlotsCompute";
 
 const {width} = Dimensions.get("window");
@@ -89,6 +89,11 @@ const ParkAreaCard = ({
       <View style={styles.infoContainer}>
         <View style={styles.rateAndSlots}>
           <View style={styles.slotsContainer}>
+            <Icon
+              style={styles.slotsIcon}
+              name={vehicleType === "car" ? "car" : "motorcycle"}
+              size={17}
+            ></Icon>
             <Text style={styles.slotsText}>Free slots: {freeSlots}</Text>
           </View>
         </View>
@@ -132,7 +137,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     backgroundColor: "#fff",
     borderRadius: 8,
-    padding: 15, // Reduced padding for a sleeker look
+    padding: 15,
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: {width: 0, height: 2},
@@ -152,7 +157,7 @@ const styles = StyleSheet.create({
   distanceText: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#4A90E2", // Different color for distance
+    color: "#4A90E2",
     marginBottom: 3, // Slight space between distance and rate
   },
   title: {
@@ -181,11 +186,17 @@ const styles = StyleSheet.create({
     color: "black",
   },
   slotsContainer: {
-    marginLeft: 15,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  slotsIcon: {
+    marginLeft: 5,
+    color: "#a25656",
   },
   slotsText: {
     color: "#d9534f", // Attractive color for urgency
     fontWeight: "bold",
+    marginLeft: 10,
   },
   ratingContainer: {
     flexDirection: "row",

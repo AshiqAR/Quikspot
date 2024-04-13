@@ -1,11 +1,18 @@
 const getActiveBookingsCount = activeBookingsData => {
   const currentTime = Date.now();
-  const threeMinutes = 3 * 60 * 1000;
+  const fiveMinutes = 5 * 60 * 1000; // Three minutes in milliseconds
+
   let result = Object.values(activeBookingsData).filter(booking => {
-    return (
-      !booking.checkInTime || currentTime - booking.checkInTime > threeMinutes
-    );
+    if (!booking.checkInTime) {
+      return true; // If there is no check-in time, include the booking
+    }
+
+    // Assuming checkInTime is also a Unix timestamp in milliseconds
+    const timeDiff = currentTime - booking.checkInTime;
+
+    return timeDiff < fiveMinutes;
   });
+
   return result.length;
 };
 
@@ -23,8 +30,8 @@ const getAvailableSlots = (
   let availableSlotsForDisplay = 0;
   if (vehicleType === "motorcycle") {
     availableSlotsForDisplay = (totalSlots - fullyfilled - n) * 2 - halffilled;
-    if (availableSlotsForDisplay > totalSlots) {
-      availableSlotsForDisplay = totalSlots;
+    if (availableSlotsForDisplay > 2 * totalSlots) {
+      availableSlotsForDisplay = 2 * totalSlots;
     }
     return availableSlotsForDisplay < 0 ? 0 : availableSlotsForDisplay;
   }
@@ -44,4 +51,13 @@ const isIotDataConsistent = (iotData, totalSlots) => {
   return emptySlots + halffilled + fullSlots === parseInt(totalSlots);
 };
 
-export {getAvailableSlots, isIotDataConsistent};
+const getCoolOffTime = duration => {
+  if (duration > 0 && duration <= 10) {
+    return 20;
+  } else if (duration > 10 && duration <= 30) {
+    return 30;
+  }
+  return 60;
+};
+
+export {getAvailableSlots, isIotDataConsistent, getCoolOffTime};

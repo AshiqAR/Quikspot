@@ -50,7 +50,7 @@ export const ParkingDataProvider = ({children}) => {
         parkArea: {_id: bookingDetails.parkArea._id},
         vehicle: bookingDetails.vehicle,
         user: {_id: user._id},
-        coolOffTime: coolOffTime,
+        coolOffTime: coolOffTime, // in minutes
       };
 
       const response = await axios.post(bookASlotURL, requestBody);
