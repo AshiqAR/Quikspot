@@ -100,7 +100,9 @@ export const ParkingDataProvider = ({children}) => {
               };
             })
           );
-          setParkAreas(parkAreasWithDistance);
+          setParkAreas(
+            parkAreasWithDistance.sort((a, b) => a.distance - b.distance)
+          );
           console.log("Park Areas updated: ", parkAreasWithDistance);
         } else {
           console.log("No changes in Park Areas.");
@@ -131,7 +133,7 @@ export const ParkingDataProvider = ({children}) => {
         getParkAreasWithinDistance(
           searchLocation.location.latitude,
           searchLocation.location.longitude,
-          1,
+          5,
           parkAreas
         )
       );
@@ -207,7 +209,7 @@ export const ParkingDataProvider = ({children}) => {
   }, []);
 
   function getParkAreasWithinDistance(latitude, longitude, dist, parkAreas) {
-    return parkAreas.filter(parkArea => {
+    let filtered = parkAreas.filter(parkArea => {
       const distance = getDistanceFromLatLonInKm(
         latitude,
         longitude,
@@ -216,6 +218,7 @@ export const ParkingDataProvider = ({children}) => {
       );
       return distance <= dist;
     });
+    return filtered.sort((a, b) => a.distance - b.distance);
   }
 
   return (

@@ -5,7 +5,6 @@ import {StatusBar, View, Text} from "react-native";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
 import TabNavigationContainer from "./navigation/TabNavigationContainer";
 import AuthStackScreen from "./navigation/AuthStackScreen";
-import FirebaseIndex from "./src/FirebaseIndex";
 
 function Account() {
   const {user} = useAuth();

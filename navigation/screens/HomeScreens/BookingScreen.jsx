@@ -26,6 +26,11 @@ import TransactionAnimation from "../../components/TransactionAnimation";
 import VehicleDetails from "../../components/BookingScreenComponents/VehicleDetails";
 import ParkAreaBookingDetailsCard from "../../components/BookingScreenComponents/ParkAreaBookingDetailsCard";
 import UserReviews from "../../components/BookingScreenComponents/UserReviews";
+import {
+  getAvailableSlots,
+  isIotDataConsistent,
+} from "../../utilities/FreeSlotsCompute";
+import database from "@react-native-firebase/database";
 
 const BookingScreen = ({navigation, route}) => {
   const {user, setUser} = useAuth();
@@ -34,6 +39,9 @@ const BookingScreen = ({navigation, route}) => {
   const [parkAreaDetails, setParkAreaDetails] = useState(null);
   const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
   const [transactionVisible, setTransactionVisible] = useState(false);
+  const [freeSlots, setFreeSlots] = useState(0);
+  const [iotData, setIotData] = useState({});
+  const [activeBookingsData, setActiveBookingsData] = useState({});
 
   const coolOffTime = 15; // In minutes
   const [animation] = useState(
@@ -94,11 +102,61 @@ const BookingScreen = ({navigation, route}) => {
   };
 
   useEffect(() => {
+    database()
+      .ref(`/parkareas/iot/${parkAreaId}`)
+      .on("value", snapshot => {
+        setIotData(snapshot.val());
+      });
+    return () => {
+      database().ref(`/parkareas/iot/${parkAreaId}`).off("value");
+    };
+  }, []);
+
+  useEffect(() => {
+    database()
+      .ref(`/parkareas/activeBookings/${parkAreaId}`)
+      .on("value", snapshot => {
+        if (snapshot.val()) {
+          setActiveBookingsData(snapshot.val());
+        } else {
+          setActiveBookingsData({});
+        }
+      });
+    return () => {
+      database().ref(`/parkareas/activeBookings/${parkAreaId}`).off("value");
+    };
+  }, []);
+
+  useEffect(() => {
+    setFreeSlots(
+      getAvailableSlots(
+        bookingDetails.vehicle.type,
+        iotData,
+        activeBookingsData,
+        bookingDetails.parkArea.totalSlots
+      )
+    );
+  }, [iotData, activeBookingsData]);
+
+  useEffect(() => {
     console.log(bookingDetails);
     fetchParkAreaDetailsForBooking();
   }, []);
 
   const handleBookNowPress = () => {
+    if (!isIotDataConsistent(iotData, parkAreaDetails.totalSlots)) {
+      Alert.alert(
+        "Error",
+        "Parking area data is inconsistent. Please try again later."
+      );
+      return;
+    } else if (freeSlots <= 0) {
+      Alert.alert(
+        "Free Slots Unavailable",
+        "No free slots available. Please try again later."
+      );
+      return;
+    }
     setShowConfirmation(true);
   };
 
@@ -107,6 +165,19 @@ const BookingScreen = ({navigation, route}) => {
   };
 
   const handleConfirmBooking = async () => {
+    if (!isIotDataConsistent(iotData, parkAreaDetails.totalSlots)) {
+      Alert.alert(
+        "Error",
+        "Parking area data is inconsistent. Please try again later."
+      );
+      return;
+    } else if (freeSlots <= 0) {
+      Alert.alert(
+        "Free Slots Unavailable",
+        "No free slots available. Please try again later."
+      );
+      return;
+    }
     try {
       setMessage("Confirming your booking...");
       setTransactionVisible(true);
@@ -142,7 +213,10 @@ const BookingScreen = ({navigation, route}) => {
       {parkAreaDetails && (
         <View style={{flex: 1, justifyContent: "space-between"}}>
           <ScrollView style={styles.scrollView}>
-            <ParkAreaBookingDetailsCard parkAreaDetails={parkAreaDetails} />
+            <ParkAreaBookingDetailsCard
+              parkAreaDetails={parkAreaDetails}
+              freeSlots={freeSlots}
+            />
             <VehicleDetails vehicle={bookingDetails.vehicle} />
             <UserReviews reviews={parkAreaDetails.reviews} />
           </ScrollView>

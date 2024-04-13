@@ -1,6 +1,7 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import {View, Text, StyleSheet, Dimensions, Pressable} from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import {getAvailableSlots} from "../utilities/FreeSlotsCompute";
 
 const {width} = Dimensions.get("window");
 
@@ -9,6 +10,13 @@ const getFormattedDistance = distance_in_m => {
     return `${Math.round(distance_in_m)} m`;
   }
   return `${(distance_in_m / 1000).toFixed(1)} km`;
+};
+
+const getRating = (totalRating, totalNumberOfRatings) => {
+  if (totalRating === 0) {
+    return 0;
+  }
+  return totalRating / totalNumberOfRatings;
 };
 
 const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
@@ -36,9 +44,30 @@ const getRatingColor = rating => {
   return `rgb(${interpolatedColor.r}, ${interpolatedColor.g}, ${interpolatedColor.b})`;
 };
 
-const ParkAreaCard = ({parkArea, onPress}) => {
+const ParkAreaCard = ({
+  parkArea,
+  activeBookingsData,
+  iotData,
+  vehicleType,
+  onPress,
+}) => {
+  const [freeSlots, setFreeSlots] = useState(0);
+  useEffect(() => {
+    setFreeSlots(
+      getAvailableSlots(
+        vehicleType,
+        iotData,
+        activeBookingsData,
+        parkArea.totalSlots
+      )
+    );
+  }, [iotData, activeBookingsData]);
+
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable
+      style={styles.card}
+      onPress={() => onPress(parkArea, iotData, activeBookingsData)}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>{parkArea.parkAreaName}</Text>
         <View style={styles.rateAndDistanceContainer}>
@@ -60,17 +89,19 @@ const ParkAreaCard = ({parkArea, onPress}) => {
       <View style={styles.infoContainer}>
         <View style={styles.rateAndSlots}>
           <View style={styles.slotsContainer}>
-            <Text style={styles.slotsText}>
-              Free slots: {parkArea.availableSlots}
-            </Text>
+            <Text style={styles.slotsText}>Free slots: {freeSlots}</Text>
           </View>
         </View>
 
         <View style={styles.ratingContainer}>
           <Icon
             name="star"
-            // color={getRatingColor(parseFloat(parkArea.rating))}
-            color="gold"
+            color={getRatingColor(
+              getRating(
+                parkArea.rating.totalRating,
+                parkArea.rating.totalNumberOfRatings
+              )
+            )}
             size={18}
           />
           <Text style={styles.ratingText}>

@@ -18,7 +18,7 @@ const renderFeatures = ({item}) => (
   </View>
 );
 
-const ParkAreaBookingDetailsCard = ({parkAreaDetails}) => {
+const ParkAreaBookingDetailsCard = ({parkAreaDetails, freeSlots}) => {
   return (
     <View style={styles.detailCard}>
       <Text style={styles.parkAreaName}>{parkAreaDetails.parkAreaName}</Text>
@@ -32,6 +32,7 @@ const ParkAreaBookingDetailsCard = ({parkAreaDetails}) => {
       <Text style={styles.rateText}>
         Price: {"\u20B9"} {parkAreaDetails.ratePerHour}/hr
       </Text>
+      <Text style={styles.freeSlots}>Available Slots: {freeSlots}</Text>
       <View style={styles.ratingContainer}>
         <Icon name="star" size={20} color="#FFD700" />
         <Text style={styles.ratingText}>
@@ -77,6 +78,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#4CAF50",
+    marginBottom: 10,
+  },
+  freeSlots: {
+    fontSize: 18,
+    color: "#902E2F",
+    fontWeight: "bold",
     marginBottom: 10,
   },
   ratingContainer: {

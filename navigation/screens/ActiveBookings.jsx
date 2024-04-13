@@ -15,8 +15,7 @@ import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent"
 import LoadingModal from "../components/LoadingModal";
 import ActiveBookingCard from "../components/ActiveBookingCard";
 const {activeBookingsURL, cancelBookingURL} = backendUrls;
-import {db} from "../../config";
-import {ref, set} from "firebase/database";
+import database from "@react-native-firebase/database";
 
 const NavigateToParkArea = async (latitude, longitude) => {
   const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving&dir_action=navigate`;
@@ -103,7 +102,14 @@ export default function ActiveBookings() {
   };
 
   useEffect(() => {
-    fetchActiveBookings();
+    database()
+      .ref("/parkareas/activeBookings")
+      .on("value", snapshot => {
+        console.log("Active bookings:", snapshot.val());
+        fetchActiveBookings();
+      });
+
+    return () => ref.off("value", onValueChange);
   }, []);
 
   return (

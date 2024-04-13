@@ -22,11 +22,33 @@ import {useParkingDetails} from "../../context/ParkingContext";
 import ParkAreaCard from "../../components/ParkAreaCard";
 import NoParkAreaFoundCard from "../../components/NoParkAreaFoundCard";
 
+import {
+  getAvailableSlots,
+  isIotDataConsistent,
+} from "../../utilities/FreeSlotsCompute";
+import database from "@react-native-firebase/database";
+
 navigator.geolocation = require("react-native-geolocation-service");
 const {width, height} = Dimensions.get("window");
 const ASPECT_RATIO = width / height;
 const LATITUDE_DELTA = 1 / 111; // Roughly 10 kilometers
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+function getInitialState(location) {
+  if (location) {
+    return {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      latitudeDelta: LATITUDE_DELTA,
+      longitudeDelta: LONGITUDE_DELTA,
+    };
+  }
+  return {
+    latitude: 8.545785,
+    longitude: 76.904143,
+    latitudeDelta: LATITUDE_DELTA,
+    longitudeDelta: LONGITUDE_DELTA,
+  };
+}
 
 export default function MapScreen({navigation}) {
   const [searchBarIsFocused, setSearchBarIsFocused] = useState(false);
@@ -39,6 +61,11 @@ export default function MapScreen({navigation}) {
   const [showMarker, setShowMarker] = useState(false);
   const [tappedParkArea, setTappedParkArea] = useState(null);
 
+  const [parkAreaIotData, setParkAreaIotData] = useState({});
+  const [parkAreaActiveBookingsData, setParkAreaActiveBookingsData] = useState(
+    {}
+  );
+
   const {
     parkAreas,
     setSearchLocation,
@@ -49,35 +76,35 @@ export default function MapScreen({navigation}) {
     updateBookingDetails,
     isLoading,
     fetchAllParkAreas,
+    bookingDetails,
   } = useParkingDetails();
 
-  // for fetching and updating parkAreas
-  const fetchIntervalRef = useRef(null);
-  useEffect(() => {
-    const startFetchingParkAreas = () => {
-      fetchAllParkAreas();
-      fetchIntervalRef.current = setInterval(fetchAllParkAreas, 100000);
-    };
-
-    startFetchingParkAreas();
-    return () => {
-      if (fetchIntervalRef.current) {
-        clearInterval(fetchIntervalRef.current);
-      }
-    };
-  }, []);
-
-  const [mapRegion, setMapRegion] = useState({
-    latitude: 8.545785,
-    longitude: 76.904143,
-    latitudeDelta: LATITUDE_DELTA,
-    longitudeDelta: LONGITUDE_DELTA,
-  });
+  const [mapRegion, setMapRegion] = useState(getInitialState(location));
   const [camera, setCamera] = useState(null);
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
-    console.log("location", location);
+    fetchAllParkAreas();
+  }, []);
+
+  useEffect(() => {
+    database()
+      .ref("/parkareas")
+      .on("value", snapshot => {
+        if (snapshot.val().activeBookings) {
+          setParkAreaActiveBookingsData(snapshot.val().activeBookings);
+        } else {
+          setParkAreaActiveBookingsData({});
+        }
+        setParkAreaIotData(snapshot.val().iot);
+      });
+
+    return () => {
+      database().ref("/parkareas").off("value");
+    };
+  }, []);
+
+  useEffect(() => {
     if (location) {
       mapRef.current.animateToRegion(
         {
@@ -240,13 +267,28 @@ export default function MapScreen({navigation}) {
   );
 
   const renderParkAreas = () => {
-    const initiateBooking = parkArea => {
-      if (parkArea.availableSlots === 0) {
+    const initiateBooking = (parkArea, iotData, activeBookingsData) => {
+      console.log("initiate Booking", parkArea, iotData, activeBookingsData);
+
+      if (!isIotDataConsistent(iotData, parkArea.totalSlots)) {
+        Alert.alert(
+          "Park Area Not Available",
+          "Park area slot updataions are not accurate. Please try again later."
+        );
+      } else if (
+        getAvailableSlots(
+          bookingDetails.vehicle.type,
+          iotData,
+          activeBookingsData,
+          parkArea.totalSlots
+        ) === 0
+      ) {
         Alert.alert(
           "No slots available",
           "Please look for another parking area."
         );
       } else {
+        console.log();
         updateBookingDetails({parkArea});
         navigation.navigate("BookingScreen", {parkAreaId: parkArea._id});
       }
@@ -282,19 +324,28 @@ export default function MapScreen({navigation}) {
                 <ParkAreaCard
                   key={index}
                   parkArea={park}
-                  onPress={() => {
-                    console.log(suggestedParkAreas[index]);
-                    initiateBooking(suggestedParkAreas[index]);
-                  }}
+                  vehicleType={bookingDetails.vehicle.type}
+                  iotData={parkAreaIotData[park._id]}
+                  activeBookingsData={
+                    parkAreaActiveBookingsData[park._id] === undefined
+                      ? {}
+                      : parkAreaActiveBookingsData[park._id]
+                  }
+                  onPress={initiateBooking}
                 />
               ))
             : !tappedParkArea && <NoParkAreaFoundCard />}
           {tappedParkArea && (
             <ParkAreaCard
               parkArea={tappedParkArea}
-              onPress={() => {
-                initiateBooking(tappedParkArea);
-              }}
+              vehicleType={bookingDetails.vehicle.type}
+              iotData={parkAreaIotData[tappedParkArea._id]}
+              activeBookingsData={
+                parkAreaActiveBookingsData[tappedParkArea._id] === undefined
+                  ? {}
+                  : parkAreaActiveBookingsData[tappedParkArea._id]
+              }
+              onPress={initiateBooking}
             />
           )}
         </ScrollView>
@@ -421,7 +472,6 @@ export default function MapScreen({navigation}) {
                   longitude: park.location.longitude,
                 }}
                 title={park.parkAreaName}
-                description={`free slots: ${park.availableSlots}`}
                 index={index}
                 color={getColorForMarker(index, suggestedParkAreas.length)}
                 onPress={() => {
@@ -437,7 +487,6 @@ export default function MapScreen({navigation}) {
                   longitude: park.location.longitude,
                 }}
                 title={park.parkAreaName}
-                description={`free slots: ${park.availableSlots}`}
                 index={park.originalIndex}
                 color={getColorForMarker(index, visibleParks.length)}
                 onPress={() => handleMarkerPress(park.originalIndex)}
