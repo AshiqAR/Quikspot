@@ -17,10 +17,12 @@ const getAvailableSlots = (
 ) => {
   let emptySlots = parseInt(iotData.EMPTY);
   let halffilled = parseInt(iotData.HALF);
+  let fullyfilled = parseInt(iotData.FULL);
   let n = getActiveBookingsCount(activeBookingsData);
+  console.log("n=", n);
   let availableSlotsForDisplay = 0;
   if (vehicleType === "motorcycle") {
-    availableSlotsForDisplay = (emptySlots - n) * 2 + halffilled;
+    availableSlotsForDisplay = (totalSlots - fullyfilled - n) * 2 - halffilled;
     if (availableSlotsForDisplay > totalSlots) {
       availableSlotsForDisplay = totalSlots;
     }
