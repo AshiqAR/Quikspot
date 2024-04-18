@@ -8,7 +8,7 @@ const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
     return "Rating not available";
   }
   const averageRating = totalRating / totalNumberOfRatings;
-  return `${Math.round(averageRating * 100) / 100} (${totalNumberOfRatings})`;
+  return `${averageRating.toFixed(1)} (${totalNumberOfRatings})`;
 };
 
 const renderFeatures = ({item}) => (

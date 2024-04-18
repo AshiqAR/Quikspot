@@ -24,7 +24,7 @@ const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
     return "Rating not available";
   }
   const averageRating = totalRating / totalNumberOfRatings;
-  return `${Math.round(averageRating * 100) / 100} (${totalNumberOfRatings})`;
+  return `${averageRating.toFixed(1)} (${totalNumberOfRatings})`;
 };
 
 const getRatingColor = rating => {
@@ -52,6 +52,10 @@ const ParkAreaCard = ({
   onPress,
 }) => {
   const [freeSlots, setFreeSlots] = useState(0);
+  const [updateCounter, setUpdateCounter] = useState(0);
+  const [lastCheckInTime, setLastCheckInTime] = useState(0);
+  const oneMinute = 60000; // 1 minute in milliseconds
+
   useEffect(() => {
     setFreeSlots(
       getAvailableSlots(
@@ -61,7 +65,42 @@ const ParkAreaCard = ({
         parkArea.totalSlots
       )
     );
-  }, [iotData, activeBookingsData]);
+    const newLastCheckInTime = Object.values(activeBookingsData).reduce(
+      (max, booking) =>
+        booking.checkInTime ? Math.max(max, booking.checkInTime) : max,
+      0
+    );
+
+    // Get the current time in milliseconds
+    const currentTime = Date.now();
+    const oneAndHalfMinutes = 90000; // 1.5 minutes in milliseconds
+
+    // Check if the last check-in time is within the last 1.5 minutes
+    if (
+      newLastCheckInTime !== lastCheckInTime &&
+      currentTime - newLastCheckInTime <= oneAndHalfMinutes
+    ) {
+      console.log("check in within 1.5 minutes");
+      setLastCheckInTime(newLastCheckInTime);
+    }
+  }, [iotData, activeBookingsData, updateCounter]);
+
+  useEffect(() => {
+    if (lastCheckInTime !== 0) {
+      const currentTime = Date.now();
+      const timeToWait = oneMinute - (currentTime - lastCheckInTime);
+
+      console.log("Timer set for", timeToWait, "milliseconds");
+
+      const timer = setTimeout(() => {
+        console.log("1 minutes since last check-in, updating counter");
+        setUpdateCounter(updateCounter + 1);
+        setLastCheckInTime(0);
+      }, timeToWait);
+
+      return () => clearTimeout(timer);
+    }
+  }, [lastCheckInTime]);
 
   return (
     <Pressable
