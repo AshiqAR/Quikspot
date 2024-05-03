@@ -34,7 +34,7 @@ const getCarBookings = activeBookingsData => {
   let result = Object.values(activeBookingsData).filter(booking => {
     if (booking.vehicleType === "car") {
       console.log(booking);
-      if (!booking.checkInTime) {
+      if (!booking.checkInTime && booking.expirationTime > currentTime) {
         console.log("No check-in time for booking: ", booking);
         return true;
       }
@@ -60,7 +60,7 @@ const getMotorcycleBookings = activeBookingsData => {
   let result = Object.values(activeBookingsData).filter(booking => {
     if (booking.vehicleType === "motorcycle") {
       console.log(booking);
-      if (!booking.checkInTime) {
+      if (!booking.checkInTime && booking.expirationTime > currentTime) {
         console.log("No check-in time for booking: ", booking);
         return true;
       }

@@ -25,6 +25,8 @@ const backendUrls = {
   addReviewRatingsURL: `${BACKEND_URL}/api/parkArea/addReview`,
   bookASlotURL: `${BACKEND_URL}/api/parkArea/bookASlot`,
   cancelBookingURL: `${BACKEND_URL}/api/parkArea/booking/cancelBooking`,
+  checkInVehicleURL: `${BACKEND_URL}/api/iot/booking/vehicleOnEntry`,
+  checkOutVehicleURL: `${BACKEND_URL}/api/iot/booking/vehicleOnExit`,
 };
 
 export default backendUrls;

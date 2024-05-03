@@ -133,7 +133,7 @@ export const ParkingDataProvider = ({children}) => {
         getParkAreasWithinDistance(
           searchLocation.location.latitude,
           searchLocation.location.longitude,
-          5,
+          2,
           parkAreas
         )
       );

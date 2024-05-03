@@ -6,20 +6,19 @@ import {
   ScrollView,
   Alert,
   FlatList,
-  Dimensions,
+  TextInput,
+  Keyboard,
+  Pressable,
 } from "react-native";
 import useLoadingWithinComponent from "../customHooks/useLoadingWithinComponent";
 import axios from "axios";
-import backendUrls from "../connections/backendUrls";
 import LoadingModal from "../components/LoadingModal";
 import Icon from "react-native-vector-icons/FontAwesome";
 import UserReviews from "../components/BookingScreenComponents/UserReviews";
+import backendUrls from "../connections/backendUrls";
 
-const screenWidth = Dimensions.get("window").width;
-const CARD_WIDTH = screenWidth * 0.8;
-const CARD_MARGIN = 15; // Margin for the cards
-
-const {getParkAreaDetailsURL} = backendUrls;
+const {getParkAreaDetailsURL, checkOutVehicleURL} = backendUrls;
+import {validateOTPInRDB} from "../utilities/OTPcontrollers";
 
 const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
   if (!totalRating || !totalNumberOfRatings || totalNumberOfRatings === 0) {
@@ -29,10 +28,25 @@ const getFormattedAverageRating = (totalRating, totalNumberOfRatings) => {
   return `${Math.round(averageRating * 100) / 100} (${totalNumberOfRatings})`;
 };
 
+const formatDate = timestamp => {
+  const date = new Date(timestamp);
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const minutesStr = minutes < 10 ? "0" + minutes : minutes;
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  return `${hours}:${minutesStr} ${ampm}, ${day}/${month}/${year}`;
+};
+
 export default function ParkSpaceDetails({navigation, route}) {
   const {space} = route.params;
   const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
   const [parkAreaDetails, setParkAreaDetails] = useState(null);
+  const [checkOutOtp, setCheckOutOtp] = useState("");
 
   useEffect(() => {
     const fetchParkAreaDetails = async () => {
@@ -43,6 +57,7 @@ export default function ParkSpaceDetails({navigation, route}) {
         });
         if (response.data?.success && response.data?.parkAreaDetails) {
           setParkAreaDetails(response.data.parkAreaDetails);
+          console.log(response.data.parkAreaDetails);
         } else {
           Alert.alert(
             "Error",
@@ -70,6 +85,42 @@ export default function ParkSpaceDetails({navigation, route}) {
     });
   }, [navigation, space.parkAreaName]);
 
+  const checkOutVehicle = async booking => {
+    Keyboard.dismiss();
+    try {
+      startLoading();
+      const isValidOtp = await validateOTPInRDB(
+        booking._id,
+        booking.parkAreaId,
+        checkOutOtp
+      );
+      if (!isValidOtp) {
+        Alert.alert(
+          "Invalid OTP",
+          "Please enter the correct OTP from the driver."
+        );
+        stopLoading();
+        return;
+      }
+      const response = await axios.post(checkOutVehicleURL, {
+        vehicleNumber: booking.vehicleId.vehicleNumber,
+        parkAreaId: booking.parkAreaId,
+      });
+      if (!response.data.success) {
+        throw new Error("Failed to check out vehicle.");
+      }
+      Alert.alert("Success", "Vehicle checked out successfully.");
+      navigation.navigate("ParkSpaceDetails", {space});
+      stopLoading();
+    } catch (error) {
+      Alert.alert(
+        "Check out failed",
+        error.message || "Vehicle Check Out Failed. Please try again later."
+      );
+      stopLoading();
+    }
+  };
+
   const renderFacility = ({item}) => (
     <View style={styles.facilityContainer}>
       <Icon name="check" size={16} color="#4CAF50" />
@@ -87,23 +138,100 @@ export default function ParkSpaceDetails({navigation, route}) {
         {booking.checkInTime ? (
           <>
             <Text style={styles.bookingText}>
-              Check-In Time: {new Date(booking.checkInTime).toLocaleString()}
+              Check-In Time: {formatDate(booking.checkInTime)}
             </Text>
           </>
         ) : (
           <>
             <Text style={styles.bookingText}>
-              Booking Time: {new Date(booking.bookedTime).toLocaleString()}
+              Booking Time: {formatDate(booking.bookedTime)}
             </Text>
             <Text style={styles.bookingText}>
-              Expiration Time:{" "}
-              {new Date(booking.bookingExpirationTime).toLocaleString()}
+              Expiration Time: {formatDate(booking.bookingExpirationTime)}
             </Text>
           </>
         )}
         <Text style={styles.bookingText}>
           Amount Transferred: ₹ {booking.amountTransferred}
         </Text>
+        {parkAreaDetails.parkAreaType === "Home" && !booking.checkInTime && (
+          <Pressable
+            style={{
+              width: "100%",
+              alignItems: "center",
+              marginTop: 10,
+              padding: 10,
+              backgroundColor: "#4CAF50",
+              borderRadius: 5,
+            }}
+            onPress={() =>
+              navigation.navigate("OwnerCapture", {
+                booking,
+                space,
+              })
+            }
+          >
+            <Text
+              style={{
+                color: "#FFFFFF",
+                fontSize: 16,
+                fontWeight: "bold",
+              }}
+            >
+              Check In Vehicle
+            </Text>
+          </Pressable>
+        )}
+        {parkAreaDetails.parkAreaType == "Home" && booking.checkInTime && (
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              alignContent: "center",
+              marginVertical: 5,
+            }}
+          >
+            <TextInput
+              style={{
+                flex: 2,
+                borderWidth: 1,
+                borderColor: "#4CAF50",
+                borderRadius: 5,
+                paddingVertical: 5,
+                paddingHorizontal: 10,
+                marginVertical: 4,
+                fontSize: 16,
+                marginRight: 10,
+              }}
+              placeholder="Enter OTP from Driver"
+              value={checkOutOtp}
+              onChangeText={setCheckOutOtp}
+            />
+            <Pressable
+              style={{
+                alignItems: "center",
+                padding: 10,
+                backgroundColor: "#4CAF50",
+                borderRadius: 30,
+              }}
+              onPress={() => {
+                checkOutVehicle(booking);
+              }}
+            >
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 16,
+                  fontWeight: "bold",
+                }}
+              >
+                Check Out Vehicle
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     );
   };
@@ -118,10 +246,10 @@ export default function ParkSpaceDetails({navigation, route}) {
         {booking.checkInTime ? (
           <>
             <Text style={styles.bookingText}>
-              Check-In Time: {new Date(booking.checkInTime).toLocaleString()}
+              Check-In Time: {formatDate(booking.checkInTime)}
             </Text>
             <Text style={styles.bookingText}>
-              Check-Out Time: {new Date(booking.checkOutTime).toLocaleString()}
+              Check-Out Time: {formatDate(booking.checkOutTime)}
             </Text>
           </>
         ) : (
@@ -256,7 +384,9 @@ const styles = StyleSheet.create({
     color: "#444",
   },
   noBookings: {
+    marginBottom: 10,
     fontSize: 16,
-    color: "#666",
+    // light color to represent no bookings
+    color: "#999",
   },
 });

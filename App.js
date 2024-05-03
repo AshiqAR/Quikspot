@@ -6,6 +6,8 @@ import {GestureHandlerRootView} from "react-native-gesture-handler";
 import TabNavigationContainer from "./navigation/TabNavigationContainer";
 import AuthStackScreen from "./navigation/AuthStackScreen";
 
+import OwnerCapture from "./navigation/screens/HomeParkingValidationScreens/OwnerCapture";
+
 function Account() {
   const {user} = useAuth();
   if (user) {
@@ -33,6 +35,6 @@ function App() {
 }
 
 // function App() {
-//   return <FirebaseIndex />;
+//   return <OwnerCapture />;
 // }
 export default App;

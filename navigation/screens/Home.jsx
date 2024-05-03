@@ -9,6 +9,9 @@ import {mapStyle} from "../utilities/mapStyles";
 import parkAreas from "../utilities/parkAreas";
 import {useParkingDetails} from "../context/ParkingContext";
 import ImageMarker from "../components/ImageMarker";
+import backendUrls from "../connections/backendUrls";
+
+const {getAllParkAreasURL} = backendUrls;
 
 //
 const INTIAL_REGION = {
@@ -20,6 +23,7 @@ const INTIAL_REGION = {
 export default function Home({navigation}) {
   const {user} = useAuth();
   const {locationSharingEnabled, getLocation, location} = useParkingDetails();
+  // const [parkAreas, setParkAreas] = useState([]);
 
   const mapViewRef = useRef(null);
 
@@ -30,7 +34,17 @@ export default function Home({navigation}) {
     longitudeDelta: 0.005,
   });
 
-  //
+  // useEffect(() => {
+  //   axios
+  //     .get(getAllParkAreasURL)
+  //     .then(response => {
+  //       console.log(response.data);
+  //       setParkAreas(response.data.parkAreas);
+  //     })
+  //     .catch(error => {
+  //       console.error(error);
+  //     });
+  // }, []);
 
   const [markers, setMarkers] = useState([]);
   const [region, setRegion] = useState(INTIAL_REGION);
@@ -126,21 +140,26 @@ export default function Home({navigation}) {
         toolbarEnabled={false}
         loadingEnabled={true}
       >
-        {/* {locationSharingEnabled && location != null && (
-          <CustomUserLocationMarker
-            latitude={location.latitude}
-            longitude={location.longitude}
-          />
-        )} */}
-        {parkAreas.map((parkArea, index) => (
-          <ImageMarker
-            key={index}
-            point={parkArea.coords}
-            title={parkArea.name}
-            index={index}
-            color="FF0000"
-          />
-        ))}
+        {parkAreas.length > 0 &&
+          parkAreas.map((parkArea, index) => (
+            <ImageMarker
+              key={index}
+              point={parkArea.coords}
+              title={parkArea.name}
+              index={index}
+              color="FF0000"
+            />
+          ))}
+        {/* {parkAreas.length > 0 &&
+          parkAreas.map((parkArea, index) => (
+            <ImageMarker
+              key={index}
+              point={parkArea.location}
+              title={parkArea.parkAreaName}
+              index={index}
+              color="FF0000"
+            />
+          ))} */}
       </MapView>
       <View style={styles.searchContainer}>
         <Pressable

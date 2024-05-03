@@ -30,10 +30,10 @@ export default function ActiveBookings() {
   const {user} = useAuth();
   const {isLoading, startLoading, stopLoading} = useLoadingWithinComponent();
   const [activeBookings, setActiveBookings] = useState([]);
+  const [rdbData, setRdbData] = useState([]);
 
   const fetchActiveBookings = async () => {
     try {
-      startLoading();
       const response = await axios.post(activeBookingsURL, {userId: user._id});
       setActiveBookings(response.data.activeBookings);
       console.log("Active bookings:", response.data);
@@ -43,7 +43,6 @@ export default function ActiveBookings() {
         "Failed to fetch active bookings. Please try again later."
       );
     } finally {
-      stopLoading();
     }
   };
 
@@ -92,9 +91,12 @@ export default function ActiveBookings() {
   };
 
   const renderBookingItem = ({item}) => {
+    let parkId = item.parkAreaId._id;
+    let bookingId = item._id;
     return (
       <ActiveBookingCard
         item={item}
+        rdbData={rdbData ? rdbData[parkId][bookingId] : null}
         onNavigateToParkArea={NavigateToParkArea}
         onCancelBooking={confirmCancelBooking}
       />
@@ -106,10 +108,13 @@ export default function ActiveBookings() {
       .ref("/parkareas/activeBookings")
       .on("value", snapshot => {
         console.log("Active bookings:", snapshot.val());
+        setRdbData(snapshot.val());
         fetchActiveBookings();
       });
 
-    return () => ref.off("value", onValueChange);
+    return () => {
+      database().ref("/parkareas/activeBookings").off("value");
+    };
   }, []);
 
   return (

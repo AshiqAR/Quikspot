@@ -14,6 +14,7 @@ import ParkSpaceDetails from "./screens/ParkSpaceDetails";
 import CustomHeader from "./components/CustomHeader";
 import {UserParkSpacesProvider} from "./context/UserParkSpacesContext";
 import RentYourSpaceStack from "./RentYourSpaceStack";
+import OwnerCapture from "./screens/HomeParkingValidationScreens/OwnerCapture";
 
 function withUserParkSpacesProvider(Component) {
   return function Wrapper(props) {
@@ -94,6 +95,13 @@ export default function AccountNavigatorStack() {
         component={withUserParkSpacesProvider(ParkSpaceDetails)}
         options={{
           title: "Park Space Details",
+        }}
+      />
+      <Stack.Screen
+        name="OwnerCapture"
+        component={OwnerCapture}
+        options={{
+          title: "Validate Vehicle",
         }}
       />
       <Stack.Screen

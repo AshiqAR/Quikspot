@@ -1,9 +1,15 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import {View, Text, TouchableOpacity, StyleSheet} from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import {format, parseISO} from "date-fns";
+import {generateOTPInRDB} from "../utilities/OTPcontrollers";
 
-const ActiveBookingCard = ({item, onCancelBooking, onNavigateToParkArea}) => {
+const ActiveBookingCard = ({
+  item,
+  rdbData,
+  onCancelBooking,
+  onNavigateToParkArea,
+}) => {
   const formatDate = dateString => {
     return format(parseISO(dateString), "MMM d yyyy, hh:mm:ss a");
   };
@@ -47,6 +53,19 @@ const ActiveBookingCard = ({item, onCancelBooking, onNavigateToParkArea}) => {
         </View>
       </View>
       <Text style={styles.amount}>Amount Paid: ₹{item.amountTransferred}</Text>
+      {item.parkAreaId.parkAreaType === "Home" && (
+        <>
+          {rdbData != null && rdbData.OTP && <Text>OTP: {rdbData.OTP}</Text>}
+          <TouchableOpacity
+            onPress={() => {
+              generateOTPInRDB(item._id, item.parkAreaId._id);
+            }}
+            style={{paddingVertical: 5, borderRadius: 5}}
+          >
+            <Text>Generate OTP</Text>
+          </TouchableOpacity>
+        </>
+      )}
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.navigateButton}
