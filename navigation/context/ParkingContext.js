@@ -128,13 +128,14 @@ export const ParkingDataProvider = ({children}) => {
 
   const [fetchSuggestedParkAreas, isLoading] = useCloseWithIndicator(
     async () => {
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       setSuggestedParkAreas(
-        getParkAreasWithinDistance(
+        getParkAreasWithinDistanceAndType(
           searchLocation.location.latitude,
           searchLocation.location.longitude,
           2,
-          parkAreas
+          parkAreas,
+          bookingDetails.vehicle.type
         )
       );
     }
@@ -208,7 +209,13 @@ export const ParkingDataProvider = ({children}) => {
     getLocation();
   }, []);
 
-  function getParkAreasWithinDistance(latitude, longitude, dist, parkAreas) {
+  function getParkAreasWithinDistanceAndType(
+    latitude,
+    longitude,
+    dist,
+    parkAreas,
+    vehicleType
+  ) {
     let filtered = parkAreas.filter(parkArea => {
       const distance = getDistanceFromLatLonInKm(
         latitude,
@@ -216,7 +223,7 @@ export const ParkingDataProvider = ({children}) => {
         parkArea.location.latitude,
         parkArea.location.longitude
       );
-      return distance <= dist;
+      return distance <= dist && !(parkArea.onlyBikes && vehicleType === "car");
     });
     return filtered.sort((a, b) => a.distance - b.distance);
   }

@@ -88,6 +88,12 @@ export default function MapScreen({navigation}) {
   }, []);
 
   useEffect(() => {
+    if (bookingDetails.vehicle.type === "car" && parkAreas.length > 0) {
+      let carParkAreas = parkAreas.filter(parkArea => !parkArea.onlyBikes);
+    }
+  }, [parkAreas]);
+
+  useEffect(() => {
     database()
       .ref("/parkareas")
       .on("value", snapshot => {
@@ -201,7 +207,8 @@ export default function MapScreen({navigation}) {
           park.location.latitude < north &&
           park.location.latitude > south &&
           park.location.longitude < east &&
-          park.location.longitude > west
+          park.location.longitude > west &&
+          !(bookingDetails.vehicle.type === "car" && park.onlyBikes)
         );
       });
 
@@ -269,6 +276,14 @@ export default function MapScreen({navigation}) {
   const renderParkAreas = () => {
     const initiateBooking = (parkArea, iotData, activeBookingsData) => {
       console.log("initiate Booking", parkArea, iotData, activeBookingsData);
+
+      if (parkArea.onlyBikes && bookingDetails.vehicle.type === "car") {
+        Alert.alert(
+          "Only Bike Parking",
+          "This park area is only for bike parking. Please select a bike to park here."
+        );
+        return;
+      }
 
       if (!isIotDataConsistent(iotData, parkArea.totalSlots)) {
         Alert.alert(

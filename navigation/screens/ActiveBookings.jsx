@@ -52,14 +52,14 @@ export default function ActiveBookings() {
       const response = await axios.post(cancelBookingURL, {bookingId});
       if (response.data.success) {
         Alert.alert("Success", response.data.message);
-        fetchActiveBookings();
+        await fetchActiveBookings();
       } else {
         Alert.alert("Error", response.data.message);
       }
     } catch (error) {
       Alert.alert("Error", "Failed to cancel booking. Please try again later.");
     } finally {
-      fetchActiveBookings();
+      await fetchActiveBookings();
     }
   };
 
@@ -71,6 +71,9 @@ export default function ActiveBookings() {
       );
       return;
     }
+    Alert.alert("Cannot cancel booking", "Cancellation is non-refundable.");
+    return;
+
     Alert.alert(
       "Cancel Booking",
       "Do you want to cancel your booking? Cancellation is non-refundable.",
@@ -91,8 +94,10 @@ export default function ActiveBookings() {
   };
 
   const renderBookingItem = ({item}) => {
+    console.log("Item:", item);
     let parkId = item.parkAreaId._id;
     let bookingId = item._id;
+    console.log("RDB Data:", rdbData);
     return (
       <ActiveBookingCard
         item={item}
